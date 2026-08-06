@@ -50,12 +50,14 @@
 
     <script>
         const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-        // ⚠️ ต้องใช้ Web App URL ที่สิทธิ์เป็น Anyone (ลงท้ายด้วย /exec)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhy0sMmZRdV-KMTsr7go4KQsnfRrHhvp46sa-iLJeN0ZxchKfRht-3IGG7bVFfpo_k/exec"; 
         
-        // 📍 พิกัดที่ทำงานจริง
+        // 📍 พิกัดที่ทำงานจริง (แก้ไข Longitude ที่ถูกต้อง: 100.79581193419803)
         const OFFICE_LAT = 18.747834249255696; 
-        const OFFICE_LNG = 1100.79581193419803; 
+        const OFFICE_LNG = 100.79581193419803; 
+
+        // ระยะทางสูงสุดที่อนุญาตให้ลงเวลา (เมตร)
+        const MAX_ALLOWED_DISTANCE = 50;
 
         let userId = "UNKNOWN"; 
         let userName = "ไม่ระบุชื่อ"; 
@@ -110,9 +112,11 @@
                     document.getElementById('status').style.color = "#cc0000";
                     document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์เข้าถึงพิกัด";
                     document.getElementById('mainButton').innerText = "❌ ไม่พบพิกัด GPS";
+                    document.getElementById('mainButton').disabled = true;
                 }, { enableHighAccuracy: true, timeout: 10000 });
             } else {
                 document.getElementById('status').innerText = "อุปกรณ์ของคุณไม่รองรับ GPS";
+                document.getElementById('mainButton').disabled = true;
             }
         }
 
@@ -122,7 +126,7 @@
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            const R = 6371000;
+            const R = 6371000; // รัศมีโลก (เมตร)
             const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
             const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
@@ -130,7 +134,8 @@
             const distance = R * c;
 
             const btn = document.getElementById('mainButton');
-            if (distance <= 50) {
+            
+            if (distance <= MAX_ALLOWED_DISTANCE) {
                 btn.disabled = false;
                 document.getElementById('status').style.color = "#06C755";
                 document.getElementById('status').innerText = `คุณอยู่ในระยะทำงานแล้ว (ห่าง ${distance.toFixed(1)} ม.)`;
@@ -144,20 +149,16 @@
             } else {
                 btn.disabled = true;
                 document.getElementById('status').style.color = "#cc0000";
-                document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${distance.toFixed(1)} เมตร (จำกัดไม่เกิน 50 ม.)`;
+                document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${distance.toFixed(1)} เมตร (จำกัดไม่เกิน ${MAX_ALLOWED_DISTANCE} ม.)`;
                 btn.innerText = "❌ บล็อก: อยู่นอกระยะทำงาน";
                 btn.className = "btn";
             }
         }
 
-       async function sendData() {
+        async function sendData() {
             if(!savedPosition) return;
-            
-            const btn = document.getElementById('mainButton');
-            btn.disabled = true;
-            document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
-            
-            // คำนวณระยะทางล่าสุดอีกครั้งเพื่อส่งไปบันทึก
+
+            // ตรวจสอบระยะทางอีกครั้งก่อนส่งเพื่อความปลอดภัย
             const lat = savedPosition.coords.latitude;
             const lng = savedPosition.coords.longitude;
             const R = 6371000;
@@ -167,16 +168,27 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             const calculatedDistance = R * c;
 
-       
-           const payload = { 
-    type: clockType, 
-    userId: userId, // ⚠️ ต้องมีบรรทัดนี้แนบไปด้วย
-    userName: userName, 
-    lat: lat, 
-    lng: lng,
-    distance: calculatedDistance,
-    status: "เข้างานสำเร็จ"
-};
+            const btn = document.getElementById('mainButton');
+
+            if (calculatedDistance > MAX_ALLOWED_DISTANCE) {
+                alert("อยู่นอกระยะทำการ ไม่สามารถลงเวลาได้");
+                btn.disabled = true;
+                return;
+            }
+
+            btn.disabled = true;
+            document.getElementById('status').style.color = "#40a798";
+            document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
+
+            const payload = { 
+                type: clockType, 
+                userId: userId, 
+                userName: userName, 
+                lat: lat, 
+                lng: lng,
+                distance: calculatedDistance,
+                status: "เข้างานสำเร็จ"
+            };
 
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
