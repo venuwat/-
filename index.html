@@ -1,2 +1,76 @@
-# -
-ลงเวลาเข้าออกทำงาน
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงเวลาทำงาน</title>
+    <script src="https://line-scdn.net"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f4f7f6; }
+        .btn { color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 25px; cursor: pointer; width: 100%; max-width: 250px; font-weight: bold; margin-top: 15px; }
+        .btn-in { background-color: #06C755; }
+        .btn-out { background-color: #E64A19; }
+        #status { margin-top: 20px; font-size: 16px; color: #555; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2 id="titleText">📌 บันทึกเวลาทำงาน</h2>
+    <p id="subText">ระบบกำลังตรวจสอบพิกัดเข้าสถานที่ทำงาน...</p>
+    <button class="btn" id="mainButton" onclick="getLocation()">🔄 กำลังโหลด...</button>
+    <div id="status">กำลังเชื่อมต่อ LINE...</div>
+
+    <script>
+        // ⚠️ เอาไอดี LIFF และลิงก์ Google Script จากข้อ 3 มาแปะที่สองช่องนี้
+        const MY_LIFF_ID = "ใส่_LIFF_ID_ที่ได้จากขั้นตอนที่_5_ตรงนี้"; 
+        const GOOGLE_SCRIPT_URL = "เอาลิงก์จากขั้นตอนที่_3_มาใส่ตรงนี้"; 
+
+        let userId = ""; let userName = ""; let clockType = "in";
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('type') === 'out') { clockType = "out"; }
+
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); } 
+                else {
+                    const profile = await liff.getProfile();
+                    userId = profile.userId; userName = profile.displayName;
+                    const btn = document.getElementById('mainButton');
+                    if(clockType === "in") {
+                        document.getElementById('titleText').innerText = "📌 เช็กอินเข้างาน";
+                        document.getElementById('subText').innerText = "โปรดกดปุ่มเพื่อบันทึกเวลาเข้างาน (รัศมี 50 ม.)";
+                        btn.innerText = "🟢 กดบันทึกเข้างาน"; btn.className = "btn btn-in";
+                    } else {
+                        document.getElementById('titleText').innerText = "📌 เช็กเอาต์ออกงาน";
+                        document.getElementById('subText').innerText = "โปรดกดปุ่มเพื่อบันทึกเวลาออกงาน (รัศมี 50 ม.)";
+                        btn.innerText = "🔴 กดบันทึกออกงาน"; btn.className = "btn btn-out";
+                    }
+                    document.getElementById('status').innerText = `สวัสดีคุณ ${userName} (LINE ID: ${userId})`;
+                }
+            } catch (error) { document.getElementById('status').innerText = "เชื่อมต่อระบบ LINE ล้มเหลว"; }
+        }
+        main();
+
+        function getLocation() {
+            document.getElementById('status').innerText = "กำลังตรวจจับ GPS ความแม่นยำสูง...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(sendPosition, showError, { enableHighAccuracy: true, timeout: 10000 });
+            } else { document.getElementById('status').innerText = "เครื่องของคุณไม่รองรับ GPS"; }
+        }
+
+        async function sendPosition(position) {
+            const lat = position.coords.latitude; const lng = position.coords.longitude;
+            document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: clockType, userId: userId, userName: userName, lat: lat, lng: lng })
+                });
+                document.getElementById('status').innerText = "บันทึกสำเร็จเรียบร้อย!";
+                setTimeout(() => { liff.closeWindow(); }, 2000);
+            } catch (error) { document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว"; }
+        }
+        function showError(error) { document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์เข้าถึงพิกัดบนมือถือ"; }
+    </script>
+</body>
+</html>
