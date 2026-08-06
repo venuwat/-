@@ -150,26 +150,37 @@
             }
         }
 
-        async function sendData() {
+       async function sendData() {
             if(!savedPosition) return;
             
             const btn = document.getElementById('mainButton');
             btn.disabled = true;
             document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
             
+            // คำนวณระยะทางล่าสุดอีกครั้งเพื่อส่งไปบันทึก
+            const lat = savedPosition.coords.latitude;
+            const lng = savedPosition.coords.longitude;
+            const R = 6371000;
+            const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
+            const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const calculatedDistance = R * c;
+
             const payload = { 
                 type: clockType, 
                 userId: userId, 
                 userName: userName, 
-                lat: savedPosition.coords.latitude, 
-                lng: savedPosition.coords.longitude 
+                lat: lat, 
+                lng: lng,
+                distance: calculatedDistance,
+                status: "เข้างานสำเร็จ"
             };
 
             try {
-                // ส่งข้อมูลข้าม Domain ไปยัง Google Apps Script
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // จำเป็นสำหรับข้าม CORS บน Apps Script
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
