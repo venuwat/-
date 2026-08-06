@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบลงเวลาทำงาน</title>
-    <!-- แก้ไข URL ของ LIFF SDK ให้ถูกต้อง -->
+    <!-- LIFF SDK URL ที่ถูกต้อง -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -34,7 +34,6 @@
         </div>
 
         <div class="avatar-container">
-            <!-- เปลี่ยนรูปเริ่มต้นเป็นรูป Avatar มาตรฐาน -->
             <img id="userAvatar" class="avatar" src="https://ssl.gstatic.com/accounts/ui/avatar_2x.png" alt="Profile">
         </div>
 
@@ -51,6 +50,7 @@
 
     <script>
         const MY_LIFF_ID = "2010980900-k8VaJicy"; 
+        // ⚠️ ต้องใช้ Web App URL ที่สิทธิ์เป็น Anyone (ลงท้ายด้วย /exec)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby7qXVn0yz4flV1ejnuzoSvqOkGCwWBlWaqBl1s22vJZfWybJcD8jfEenZKtsi8HAjC/exec"; 
         
         // 📍 พิกัดที่ทำงานจริง
@@ -62,6 +62,7 @@
         let clockType = "in";
         let savedPosition = null;
         
+        // ตรวจสอบ Parameter การลงเวลาเข้า/ออก
         const urlParams = new URLSearchParams(window.location.search);
         if(urlParams.get('type') === 'out') { clockType = "out"; }
 
@@ -98,7 +99,6 @@
                 console.error("LIFF Init Error:", error);
                 document.getElementById('userName').innerText = "ผู้ใช้งานทั่วไป";
             } finally {
-                // ไม่ว่าจะดึง LIFF สำเร็จหรือไม่ ให้เริ่มเช็กพิกัด GPS ต่อทันที
                 checkLocationPermission();
             }
         }
@@ -152,7 +152,9 @@
 
         async function sendData() {
             if(!savedPosition) return;
-            document.getElementById('mainButton').disabled = true;
+            
+            const btn = document.getElementById('mainButton');
+            btn.disabled = true;
             document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
             
             const payload = { 
@@ -164,21 +166,27 @@
             };
 
             try {
+                // ส่งข้อมูลข้าม Domain ไปยัง Google Apps Script
                 await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    mode: 'no-cors', // จำเป็นสำหรับข้าม CORS บน Apps Script
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
+
+                document.getElementById('status').style.color = "#06C755";
                 document.getElementById('status').innerText = "บันทึกสำเร็จเรียบร้อย!";
+                
                 setTimeout(() => { 
                     if (typeof liff !== 'undefined' && liff.isInClient()) {
                         liff.closeWindow(); 
                     }
                 }, 1500);
             } catch (error) { 
+                console.error("Fetch error:", error);
+                document.getElementById('status').style.color = "#cc0000";
                 document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว กรุณาลองใหม่"; 
-                document.getElementById('mainButton').disabled = false;
+                btn.disabled = false;
             }
         }
     </script>
