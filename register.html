@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนพนักงาน</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
+        body { background-color: #eef2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .card { background-color: white; width: 100%; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 30px 20px; text-align: center; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; }
+        h2 { font-size: 22px; margin-bottom: 20px; color: #333; }
+        .form-group { margin-bottom: 15px; position: relative; }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; }
+        .form-control:focus { border-color: #007bff; }
+        .btn-submit { width: 100%; background-color: #007bff; color: white; border: none; padding: 14px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+        .btn-submit:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 14px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <img id="userAvatar" class="avatar" src="https://ssl.gstatic.com/accounts/ui/avatar_2x.png" alt="Profile">
+        <h2>ลงทะเบียนเจ้าหน้าที่</h2>
+
+        <div class="form-group">
+            <input type="text" id="firstName" class="form-control" placeholder="ชื่อ (ไม่ต้องกรอกคำนำหน้า)">
+        </div>
+        <div class="form-group">
+            <input type="text" id="lastName" class="form-control" placeholder="สกุล">
+        </div>
+        <div class="form-group">
+            <input type="text" id="position" class="form-control" placeholder="ตำแหน่ง">
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="registerUser()">ลงทะเบียน</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const MY_LIFF_ID = "2010980900-k8VaJicy"; // ใส่ LIFF ID
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhy0sMmZRdV-KMTsr7go4KQsnfRrHhvp46sa-iLJeN0ZxchKfRht-3IGG7bVFfpo_k/exec"; // ใส่ Web App URL
+        
+        let userId = "";
+
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    const profile = await liff.getProfile();
+                    userId = profile.userId;
+                    if (profile.pictureUrl) {
+                        document.getElementById('userAvatar').src = profile.pictureUrl;
+                    }
+                }
+            } catch (err) {
+                console.error("LIFF Init Error:", err);
+            }
+        }
+        main();
+
+        async function registerUser() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const position = document.getElementById('position').value.trim();
+            const statusDiv = document.getElementById('status');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (!firstName || !lastName || !position) {
+                statusDiv.style.color = "#cc0000";
+                statusDiv.innerText = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
+                return;
+            }
+
+            if (!userId) {
+                statusDiv.style.color = "#cc0000";
+                statusDiv.innerText = "ไม่พบข้อมูลผู้ใช้งาน LINE กรุณาลองใหม่";
+                return;
+            }
+
+            submitBtn.disabled = true;
+            statusDiv.style.color = "#007bff";
+            statusDiv.innerText = "กำลังตรวจสอบข้อมูล...";
+
+            const payload = {
+                action: "register",
+                userId: userId,
+                firstName: firstName,
+                lastName: lastName,
+                position: position
+            };
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    statusDiv.style.color = "#06C755";
+                    statusDiv.innerText = result.message;
+                    setTimeout(() => {
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
+                        }
+                    }, 2000);
+                } else {
+                    statusDiv.style.color = "#cc0000";
+                    statusDiv.innerText = result.message;
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                statusDiv.style.color = "#cc0000";
+                statusDiv.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อระบบ";
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
