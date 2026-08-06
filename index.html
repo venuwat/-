@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบลงเวลาทำงาน</title>
-    <!-- แก้ไขลิงก์ SDK เรียบร้อยแล้ว -->
-    <script src="https://line-scdn.net"></script>
+    <!-- 1. แก้ไข CDN SDK ของ LIFF ให้ถูกต้อง -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f4f7f6; }
         .btn { color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 25px; cursor: pointer; width: 100%; max-width: 250px; font-weight: bold; margin-top: 15px; }
@@ -17,7 +17,7 @@
 <body>
     <h2 id="titleText">📌 บันทึกเวลาทำงาน</h2>
     <p id="subText">ระบบกำลังตรวจสอบพิกัดเข้าสถานที่ทำงาน...</p>
-    <button class="btn" id="mainButton" onclick="getLocation()">🔄 กำลังโหลด...</button>
+    <button class="btn" id="mainButton" onclick="getLocation()" disabled>🔄 กำลังโหลด...</button>
     <div id="status">กำลังเชื่อมต่อ LINE...</div>
 
     <script>
@@ -31,46 +31,91 @@
         async function main() {
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); } 
-                else {
+                if (!liff.isLoggedIn()) { 
+                    liff.login(); 
+                } else {
                     const profile = await liff.getProfile();
-                    userId = profile.userId; userName = profile.displayName;
+                    userId = profile.userId; 
+                    userName = profile.displayName;
+                    
                     const btn = document.getElementById('mainButton');
+                    btn.disabled = false; // ปลดล็อกปุ่มเมื่อพร้อมทำงาน
+                    
                     if(clockType === "in") {
                         document.getElementById('titleText').innerText = "📌 เช็กอินเข้างาน";
                         document.getElementById('subText').innerText = "โปรดกดปุ่มเพื่อบันทึกเวลาเข้างาน (รัศมี 50 ม.)";
-                        btn.innerText = "🟢 กดบันทึกเข้างาน"; btn.className = "btn btn-in";
+                        btn.innerText = "🟢 กดบันทึกเข้างาน"; 
+                        btn.className = "btn btn-in";
                     } else {
                         document.getElementById('titleText').innerText = "📌 เช็กเอาต์ออกงาน";
                         document.getElementById('subText').innerText = "โปรดกดปุ่มเพื่อบันทึกเวลาออกงาน (รัศมี 50 ม.)";
-                        btn.innerText = "🔴 กดบันทึกออกงาน"; btn.className = "btn btn-out";
+                        btn.innerText = "🔴 กดบันทึกออกงาน"; 
+                        btn.className = "btn btn-out";
                     }
-                    document.getElementById('status').innerText = `สวัสดีคุณ ${userName} (LINE ID: ${userId})`;
+                    document.getElementById('status').innerText = `สวัสดีคุณ ${userName}`;
                 }
-            } catch (error) { document.getElementById('status').innerText = "เชื่อมต่อระบบ LINE ล้มเหลว"; }
+            } catch (error) { 
+                console.error(error);
+                document.getElementById('status').innerText = "เชื่อมต่อระบบ LINE ล้มเหลว"; 
+            }
         }
         main();
 
         function getLocation() {
+            document.getElementById('mainButton').disabled = true;
             document.getElementById('status').innerText = "กำลังตรวจจับ GPS ความแม่นยำสูง...";
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(sendPosition, showError, { enableHighAccuracy: true, timeout: 10000 });
-            } else { document.getElementById('status').innerText = "เครื่องของคุณไม่รองรับ GPS"; }
+                navigator.geolocation.getCurrentPosition(sendPosition, showError, { 
+                    enableHighAccuracy: true, 
+                    timeout: 10000 
+                });
+            } else { 
+                document.getElementById('status').innerText = "เครื่องของคุณไม่รองรับ GPS"; 
+                document.getElementById('mainButton').disabled = false;
+            }
         }
 
         async function sendPosition(position) {
-            const lat = position.coords.latitude; const lng = position.coords.longitude;
+            const lat = position.coords.latitude; 
+            const lng = position.coords.longitude;
             document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
+            
+            const payload = {
+                type: clockType,
+                userId: userId,
+                userName: userName,
+                lat: lat,
+                lng: lng
+            };
+
             try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: clockType, userId: userId, userName: userName, lat: lat, lng: lng })
+                // 2. ปรับการส่งด้วย text/plain เพื่อป้องกัน CORS Preflight Error บน Google Apps Script
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
                 });
-                document.getElementById('status').innerText = "บันทึกสำเร็จเรียบร้อย!";
-                setTimeout(() => { liff.closeWindow(); }, 2000);
-            } catch (error) { document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว"; }
+                
+                const result = await response.json();
+                
+                if (result.result === "success") {
+                    document.getElementById('status').innerText = result.status;
+                    setTimeout(() => { liff.closeWindow(); }, 2000);
+                } else {
+                    document.getElementById('status').innerText = "ข้อผิดพลาด: " + result.message;
+                    document.getElementById('mainButton').disabled = false;
+                }
+            } catch (error) { 
+                console.error(error);
+                document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว"; 
+                document.getElementById('mainButton').disabled = false;
+            }
         }
-        function showError(error) { document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์เข้าถึงพิกัดบนมือถือ"; }
+
+        function showError(error) { 
+            document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์เข้าถึงพิกัดบนมือถือ"; 
+            document.getElementById('mainButton').disabled = false;
+        }
     </script>
 </body>
 </html>
