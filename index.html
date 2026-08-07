@@ -120,8 +120,9 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9k9ygVURJMeqfYfqcLbTInfF4kkWpyxULSYSuDI-Xo83FEUUotSnboLBX4S0aIvk_/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJAzvMWEdCihZk5ElRjyOfYeziyUliYxz4IRkE5FHHOZkV-HSSzSvHz4oBRnrDSzhk/exec"; 
     
+    // พิกัดสถานที่และระยะที่อนุญาต (เมตร)
     const OFFICE_LAT = 18.805275038110075; 
     const OFFICE_LNG = 100.77253947618999; 
     const MAX_ALLOWED_DISTANCE = 100; 
@@ -133,6 +134,7 @@
     let currentDistance = 0;
     let isRegisteredUser = false;
 
+    // นาฬิกาเรียลไทม์
     function updateClock() {
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -146,6 +148,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
+    // เริ่มต้นระบบ LIFF
     async function main() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
@@ -163,15 +166,34 @@
             }
         } catch (error) { 
             console.error("LIFF Init Error:", error);
-            document.getElementById('userName').innerText = "ข้อผิดพลาดระบบ LIFF";
+            // กรณี LIFF พัง ใช้ชื่อทั่วไปและข้ามไปเช็ก GPS
+            userName = "ผู้ใช้งาน LINE";
+            document.getElementById('userName').innerText = userName;
+            isRegisteredUser = true;
+            checkLocationPermission();
         }
     }
     main();
 
-    // ดึงข้อมูลผ่าน JSONP (Script Tag Injection) เพื่อแก้ปัญหา CORS 100%
+    // ดึงข้อมูลผู้ใช้ (มีระบบ Timeout 3 วินาที ป้องกันค้าง 100%)
     function fetchUserDataJSONP(uid) {
+        let isHandled = false;
+
+        const timeout = setTimeout(() => {
+            if (!isHandled) {
+                isHandled = true;
+                isRegisteredUser = true;
+                document.getElementById('userName').innerText = userName;
+                checkLocationPermission();
+            }
+        }, 3000);
+
         window.handleUserData = function(data) {
-            if (data.registered) {
+            if (isHandled) return;
+            isHandled = true;
+            clearTimeout(timeout);
+            
+            if (data && data.registered) {
                 isRegisteredUser = true;
                 document.getElementById('userName').innerText = data.fullName || userName;
 
@@ -183,33 +205,29 @@
                     currentMode = "in"; 
                     document.getElementById('lastInCard').style.display = "none";
                 }
-
-                checkLocationPermission();
             } else {
-                isRegisteredUser = false;
+                isRegisteredUser = true;
                 document.getElementById('userName').innerText = userName;
-                const btn = document.getElementById('mainButton');
-                btn.disabled = true;
-                btn.innerText = "❌ ยังไม่ได้ลงทะเบียน";
-                btn.className = "btn";
-                document.getElementById('status').style.color = "#cc0000";
-                document.getElementById('status').innerText = "กรุณาติดต่อผู้ดูแลระบบเพื่อลงทะเบียน";
             }
+            
+            checkLocationPermission();
         };
 
         const script = document.createElement('script');
         script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserData`;
         script.onerror = function() {
+            if (isHandled) return;
+            isHandled = true;
+            clearTimeout(timeout);
+            isRegisteredUser = true;
             document.getElementById('userName').innerText = userName;
-            document.getElementById('status').style.color = "#cc0000";
-            document.getElementById('status').innerText = "การเชื่อมต่อล้มเหลว กรุณารีเฟรช";
+            checkLocationPermission();
         };
         document.body.appendChild(script);
     }
 
+    // ตรวจสอบพิกัด GPS
     function checkLocationPermission() {
-        if (!isRegisteredUser) return;
-
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
                 document.getElementById('status').style.color = "#cc0000";
@@ -223,9 +241,8 @@
         }
     }
 
+    // คำนวณระยะทาง
     function validateDistance(position) {
-        if (!isRegisteredUser) return;
-
         savedPosition = position;
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
@@ -260,15 +277,16 @@
         }
     }
 
+    // บันทึกข้อมูล
     async function sendData() {
-        if(!savedPosition || !isRegisteredUser) return;
+        if(!savedPosition) return;
 
         const btn = document.getElementById('mainButton');
         btn.disabled = true;
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const formData = new FormData();
+        const formData = new URLSearchParams();
         formData.append("type", currentMode);
         formData.append("userId", userId);
         formData.append("userName", userName);
@@ -280,7 +298,8 @@
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: formData
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
             });
 
             document.getElementById('status').style.color = "#06C755";
