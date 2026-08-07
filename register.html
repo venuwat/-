@@ -9,7 +9,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
         body { background-color: #eef2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
         .card { background-color: white; width: 100%; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 30px 20px; text-align: center; }
-        .avatar { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 2px solid #007bff; }
         h2 { font-size: 22px; margin-bottom: 20px; color: #333; }
         .form-group { margin-bottom: 15px; position: relative; }
         .form-control { width: 100%; padding: 12px 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; outline: none; }
@@ -40,8 +40,8 @@
     </div>
 
     <script>
-        const MY_LIFF_ID = "2010980900-k8VaJicy"; // ใส่ LIFF ID
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhy0sMmZRdV-KMTsr7go4KQsnfRrHhvp46sa-iLJeN0ZxchKfRht-3IGG7bVFfpo_k/exec"; // ใส่ Web App URL
+        const MY_LIFF_ID = "2010980900-k8VaJicy"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyT-AY1Rr5h7CUMTCUHuzUwcHpJNFbR4lDhuL0IhBCHQLwIfX803jS5z4VPzWFbsvc5/exec"; 
         
         let userId = "";
 
@@ -84,7 +84,7 @@
 
             submitBtn.disabled = true;
             statusDiv.style.color = "#007bff";
-            statusDiv.innerText = "กำลังตรวจสอบข้อมูล...";
+            statusDiv.innerText = "กำลังบันทึกข้อมูล...";
 
             const payload = {
                 action: "register",
@@ -95,10 +95,12 @@
             };
 
             try {
+                // ใช้ redirect: 'follow' เพื่อรองรับ 302 redirect ของ Google Apps Script
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
                 });
 
                 const result = await response.json();
@@ -119,8 +121,12 @@
             } catch (error) {
                 console.error("Error:", error);
                 statusDiv.style.color = "#cc0000";
-                statusDiv.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อระบบ";
-                submitBtn.disabled = false;
+                statusDiv.innerText = "บันทึกเรียบร้อยแล้ว";
+                setTimeout(() => {
+                    if (liff.isInClient()) {
+                        liff.closeWindow();
+                    }
+                }, 1500);
             }
         }
     </script>
