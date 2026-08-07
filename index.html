@@ -120,7 +120,7 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuZCrqwamY-_my6i_u7eyRRBqqMgwvFvVivT6Kbj4BPdwgVnT_gNfs4qdj8r1YCKUT/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwO4yiAL3V1AwAuPLgSoDrh1fPxnHZSZqKmMpA6ePhzkoxQw41esil5xodo6sg3LYUJ/exec"; 
     
     // ตั้งค่าพิกัดสำนักงาน/โรงพยาบาล และระยะที่อนุญาต (เมตร)
     const OFFICE_LAT = 18.805275038110075; 
@@ -261,7 +261,7 @@
         }
     }
 
-    // ส่งข้อมูลลงเวลาไปยัง Google Sheets
+    // ส่งข้อมูลลงเวลาไปยัง Google Sheets (ส่งแบบ Form Data หลีกเลี่ยง CORS)
     async function sendData() {
         if(!savedPosition || !isRegisteredUser) return;
 
@@ -270,20 +270,19 @@
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const payload = { 
-            type: currentMode, 
-            userId: userId, 
-            userName: userName, 
-            lat: savedPosition.coords.latitude, 
-            lng: savedPosition.coords.longitude,
-            distance: currentDistance
-        };
+        const formData = new URLSearchParams();
+        formData.append("type", currentMode);
+        formData.append("userId", userId);
+        formData.append("userName", userName);
+        formData.append("lat", savedPosition.coords.latitude);
+        formData.append("lng", savedPosition.coords.longitude);
+        formData.append("distance", currentDistance);
 
         try {
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
             });
 
             document.getElementById('status').style.color = "#06C755";
