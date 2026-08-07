@@ -120,7 +120,7 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMx7UCfFU47e6PECx0tXRmsITN9Xqh-2ZoxLSD5gLMy-8UUDeNfvcycgO1SsMg5dWp/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwO4yiAL3V1AwAuPLgSoDrh1fPxnHZSZqKmMpA6ePhzkoxQw41esil5xodo6sg3LYUJ/exec"; 
     
     const OFFICE_LAT = 18.805275038110075; 
     const OFFICE_LNG = 100.77253947618999; 
@@ -159,7 +159,7 @@
                     document.getElementById('userAvatar').src = profile.pictureUrl;
                 }
 
-                await fetchUserData(userId);
+                fetchUserDataJSONP(userId);
             }
         } catch (error) { 
             console.error("LIFF Init Error:", error);
@@ -168,11 +168,9 @@
     }
     main();
 
-    async function fetchUserData(uid) {
-        try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?userId=${uid}`);
-            const data = await res.json();
-            
+    // ดึงข้อมูลผ่าน JSONP (Script Tag Injection) เพื่อแก้ปัญหา CORS 100%
+    function fetchUserDataJSONP(uid) {
+        window.handleUserData = function(data) {
             if (data.registered) {
                 isRegisteredUser = true;
                 document.getElementById('userName').innerText = data.fullName || userName;
@@ -197,12 +195,16 @@
                 document.getElementById('status').style.color = "#cc0000";
                 document.getElementById('status').innerText = "กรุณาติดต่อผู้ดูแลระบบเพื่อลงทะเบียน";
             }
-        } catch (err) {
-            console.error("Fetch User Data Error:", err);
+        };
+
+        const script = document.createElement('script');
+        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserData`;
+        script.onerror = function() {
             document.getElementById('userName').innerText = userName;
             document.getElementById('status').style.color = "#cc0000";
-            document.getElementById('status').innerText = "โหลดข้อมูลล้มเหลว กรุณารีเฟรช";
-        }
+            document.getElementById('status').innerText = "การเชื่อมต่อล้มเหลว กรุณารีเฟรช";
+        };
+        document.body.appendChild(script);
     }
 
     function checkLocationPermission() {
@@ -275,7 +277,6 @@
         formData.append("distance", currentDistance);
 
         try {
-            // ส่งแบบ no-cors ป้องกัน CORS บล็อก และส่ง FormData ตรงเข้า Apps Script
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -290,7 +291,7 @@
             }
             
             setTimeout(() => {
-                fetchUserData(userId);
+                fetchUserDataJSONP(userId);
             }, 1500);
 
         } catch (error) { 
