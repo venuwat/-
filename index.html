@@ -120,7 +120,7 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJAzvMWEdCihZk5ElRjyOfYeziyUliYxz4IRkE5FHHOZkV-HSSzSvHz4oBRnrDSzhk/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJnqJNKMlELv17ehxyx8QTaM87ZM69SL9rrIpRN242TnSZhwy6m8lkkpiD_F2Zzg5P/exec"; 
     
     // พิกัดสถานที่และระยะที่อนุญาต (เมตร)
     const OFFICE_LAT = 18.805275038110075; 
@@ -166,7 +166,6 @@
             }
         } catch (error) { 
             console.error("LIFF Init Error:", error);
-            // กรณี LIFF พัง ใช้ชื่อทั่วไปและข้ามไปเช็ก GPS
             userName = "ผู้ใช้งาน LINE";
             document.getElementById('userName').innerText = userName;
             isRegisteredUser = true;
@@ -277,7 +276,7 @@
         }
     }
 
-    // บันทึกข้อมูล
+    // บันทึกข้อมูล (แก้ไขการส่ง payload แบบ JSON + text/plain เพื่อให้ผ่าน CORS ชัวร์)
     async function sendData() {
         if(!savedPosition) return;
 
@@ -286,20 +285,20 @@
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const formData = new URLSearchParams();
-        formData.append("type", currentMode);
-        formData.append("userId", userId);
-        formData.append("userName", userName);
-        formData.append("lat", savedPosition.coords.latitude);
-        formData.append("lng", savedPosition.coords.longitude);
-        formData.append("distance", currentDistance);
+        const payload = JSON.stringify({
+            type: currentMode,
+            userId: userId,
+            userName: userName,
+            lat: savedPosition.coords.latitude,
+            lng: savedPosition.coords.longitude,
+            distance: currentDistance
+        });
 
         try {
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString()
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: payload
             });
 
             document.getElementById('status').style.color = "#06C755";
