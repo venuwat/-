@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบลงเวลาทำงาน</title>
-    <!-- LIFF SDK URL ที่ถูกต้อง -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', -apple-system, sans-serif; }
         body { background-color: #eef2f5; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .card { background-color: white; width: 100%; max-width: 450px; min-height: 100vh; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; }
-        .header { background-color: #11999e; color: white; text-align: center; padding: 30px 20px 60px 20px; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; }
+        .card { background-color: white; width: 100%; max-width: 450px; min-height: 100vh; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .header { background-color: #11999e; color: white; text-align: center; padding: 30px 20px 60px 20px; }
         .header h2 { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
         .header p { font-size: 16px; opacity: 0.9; }
-        .avatar-container { text-align: center; margin-top: -50px; margin-bottom: 25px; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.15); object-fit: cover; background-color: #e0e0e0; }
+        .avatar-container { text-align: center; margin-top: -50px; margin-bottom: 20px; }
+        .avatar { width: 90px; height: 90px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.15); object-fit: cover; }
         .content { padding: 0 25px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; }
-        .time-box { border: 1px solid #40a798; background-color: #f6fbfb; color: #40a798; width: 100%; text-align: center; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 16px; }
+        
+        .info-card { background-color: #e8f4f8; border-left: 5px solid #11999e; width: 100%; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; color: #333; display: none; }
+        .info-card strong { color: #11999e; }
+
+        .time-box { border: 1px solid #40a798; background-color: #f6fbfb; color: #40a798; width: 100%; text-align: center; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
         .time-box .time { font-size: 22px; font-weight: bold; margin-top: 5px; }
+        
         .btn { width: 100%; color: white; border: none; padding: 14px; font-size: 18px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         .btn-in { background-color: #06C755; }
         .btn-out { background-color: #e43f5a; }
@@ -29,8 +33,8 @@
 
     <div class="card">
         <div class="header">
-            <h2>ลงเวลาทำงานโรงพยาบาลภูเพียง</h2>
-            <p id="userName">🔄 กำลังโหลดข้อมูลผู้ใช้...</p>
+            <h2>ลงเวลาปฏิบัติงาน สหกรณ์ฯ</h2>
+            <p id="userName">🔄 กำลังโหลดข้อมูล...</p>
         </div>
 
         <div class="avatar-container">
@@ -38,37 +42,36 @@
         </div>
 
         <div class="content">
+            <!-- การ์ดแสดงเวลาเข้างานที่ค้างไว้ -->
+            <div id="lastInCard" class="info-card">
+                📌 **คุณได้ลงเวลาเข้างานแล้วเมื่อ:**<br>
+                <span id="lastInTimeDisplay" style="font-size: 16px; font-weight: bold; color: #06C755;">-</span>
+            </div>
+
             <div class="time-box">
-                <div id="typeLabel">เวลาปัจจุบันของคุณคือ</div>
+                <div>เวลาปัจจุบันของคุณคือ</div>
                 <div id="currentTime" class="time">00/00/0000 00:00:00</div>
             </div>
 
-            <button class="btn" id="mainButton" onclick="sendData()" disabled>🔄 กำลังตรวจสอบพิกัด...</button>
-            <div id="status">กำลังตรวจจับระยะห่างจากที่ทำงาน...</div>
+            <button class="btn" id="mainButton" onclick="sendData()" disabled>🔄 กำลังตรวจสอบข้อมูล...</button>
+            <div id="status">กำลังตรวจสอบสิทธิ์การใช้งาน...</div>
         </div>
     </div>
 
     <script>
         const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhy0sMmZRdV-KMTsr7go4KQsnfRrHhvp46sa-iLJeN0ZxchKfRht-3IGG7bVFfpo_k/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzNjLokb5vjkUkVzbGMmDCzaLLhI0dXaDDWoCK8oQG8f1uNvAAMKCFU-qTfUbgiUiBL/exec"; 
         
-        // 📍 พิกัดที่ทำงานจริง (แก้ไข Longitude ที่ถูกต้อง: 100.79581193419803)
-        const OFFICE_LAT = 18.74655906135048; 
-        const OFFICE_LNG = 100.79597902601357; 
+        const OFFICE_LAT = 18.747834249255696; 
+        const OFFICE_LNG = 100.79581193419803; 
+        const MAX_ALLOWED_DISTANCE = 50;
 
-        // ระยะทางสูงสุดที่อนุญาตให้ลงเวลา (เมตร)
-        const MAX_ALLOWED_DISTANCE = 70;
-
-        let userId = "UNKNOWN"; 
-        let userName = "ไม่ระบุชื่อ"; 
-        let clockType = "in";
+        let userId = ""; 
+        let userName = ""; 
+        let currentMode = "in"; // "in" หรือ "out"
         let savedPosition = null;
-        
-        // ตรวจสอบ Parameter การลงเวลาเข้า/ออก
-        const urlParams = new URLSearchParams(window.location.search);
-        if(urlParams.get('type') === 'out') { clockType = "out"; }
+        let isRegisteredUser = false;
 
-        // นาฬิกา พ.ศ. เรียลไทม์
         function updateClock() {
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
@@ -77,7 +80,6 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            
             document.getElementById('currentTime').innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
         }
         setInterval(updateClock, 1000);
@@ -92,41 +94,79 @@
                     const profile = await liff.getProfile();
                     userId = profile.userId; 
                     userName = profile.displayName;
-                    document.getElementById('userName').innerText = userName;
                     if(profile.pictureUrl) {
                         document.getElementById('userAvatar').src = profile.pictureUrl;
                     }
+
+                    await fetchUserData(userId);
                 }
             } catch (error) { 
                 console.error("LIFF Init Error:", error);
-                document.getElementById('userName').innerText = "ผู้ใช้งานทั่วไป";
-            } finally {
-                checkLocationPermission();
+                document.getElementById('userName').innerText = "ข้อผิดพลาดระบบ LIFF";
             }
         }
         main();
 
+        // ดึงสถานะการลงทะเบียนและประวัติการลงเวลาร่าสุด
+        async function fetchUserData(uid) {
+            try {
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?userId=${uid}`);
+                const data = await res.json();
+                
+                if (data.registered) {
+                    isRegisteredUser = true;
+                    document.getElementById('userName').innerText = data.employeeName || userName;
+
+                    // เช็กสถานะการลงเวลาล่าสุด
+                    if (data.lastStatus === "in") {
+                        currentMode = "out"; // ถ้าเข้างานไว้แล้ว โหมดถัดไปคือ ออกงาน
+                        document.getElementById('lastInCard').style.display = "block";
+                        document.getElementById('lastInTimeDisplay').innerText = data.lastClockInTime;
+                    } else {
+                        currentMode = "in"; // ถ้าออกงานแล้ว หรือยังไม่เคยเข้างาน โหมดถัดไปคือ เข้างาน
+                        document.getElementById('lastInCard').style.display = "none";
+                    }
+
+                    checkLocationPermission();
+                } else {
+                    isRegisteredUser = false;
+                    document.getElementById('userName').innerText = userName;
+                    const btn = document.getElementById('mainButton');
+                    btn.disabled = true;
+                    btn.innerText = "❌ ยังไม่ได้ลงทะเบียน";
+                    btn.className = "btn";
+                    document.getElementById('status').style.color = "#cc0000";
+                    document.getElementById('status').innerText = "กรุณาติดต่อผู้ดูแลระบบเพื่อลงทะเบียน";
+                }
+            } catch (err) {
+                console.error("Fetch User Data Error:", err);
+            }
+        }
+
         function checkLocationPermission() {
+            if (!isRegisteredUser) return;
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
                     document.getElementById('status').style.color = "#cc0000";
-                    document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์เข้าถึงพิกัด";
+                    document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์ตำแหน่ง";
                     document.getElementById('mainButton').innerText = "❌ ไม่พบพิกัด GPS";
                     document.getElementById('mainButton').disabled = true;
                 }, { enableHighAccuracy: true, timeout: 10000 });
             } else {
-                document.getElementById('status').innerText = "อุปกรณ์ของคุณไม่รองรับ GPS";
+                document.getElementById('status').innerText = "อุปกรณ์ไม่รองรับ GPS";
                 document.getElementById('mainButton').disabled = true;
             }
         }
 
-        // คำนวณระยะทาง Haversine
         function validateDistance(position) {
+            if (!isRegisteredUser) return;
+
             savedPosition = position;
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            const R = 6371000; // รัศมีโลก (เมตร)
+            const R = 6371000;
             const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
             const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
@@ -138,9 +178,11 @@
             if (distance <= MAX_ALLOWED_DISTANCE) {
                 btn.disabled = false;
                 document.getElementById('status').style.color = "#06C755";
-                document.getElementById('status').innerText = `คุณอยู่ในระยะทำงานแล้ว (ห่าง ${distance.toFixed(1)} ม.)`;
-                if(clockType === "in") {
-                    btn.innerText = "ลงเวลาเข้างาน"; 
+                document.getElementById('status').innerText = `คุณอยู่ในระยะทำงาน (ห่าง ${distance.toFixed(1)} ม.)`;
+                
+                // กำหนดข้อความปุ่มตามสถานะปัจจุบัน
+                if (currentMode === "in") {
+                    btn.innerText = "ลงเวลาเข้าทำงาน"; 
                     btn.className = "btn btn-in";
                 } else {
                     btn.innerText = "ลงเวลากลับ"; 
@@ -149,63 +191,50 @@
             } else {
                 btn.disabled = true;
                 document.getElementById('status').style.color = "#cc0000";
-                document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${distance.toFixed(1)} เมตร (จำกัดไม่เกิน ${MAX_ALLOWED_DISTANCE} ม.)`;
-                btn.innerText = "❌ บล็อก: อยู่นอกระยะทำงาน";
+                document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${distance.toFixed(1)} เมตร`;
+                btn.innerText = "❌ อยู่นอกระยะทำงาน";
                 btn.className = "btn";
             }
         }
 
         async function sendData() {
-            if(!savedPosition) return;
-
-            // ตรวจสอบระยะทางอีกครั้งก่อนส่งเพื่อความปลอดภัย
-            const lat = savedPosition.coords.latitude;
-            const lng = savedPosition.coords.longitude;
-            const R = 6371000;
-            const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
-            const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const calculatedDistance = R * c;
+            if(!savedPosition || !isRegisteredUser) return;
 
             const btn = document.getElementById('mainButton');
-
-            if (calculatedDistance > MAX_ALLOWED_DISTANCE) {
-                alert("อยู่นอกระยะทำการ ไม่สามารถลงเวลาได้");
-                btn.disabled = true;
-                return;
-            }
-
             btn.disabled = true;
-            document.getElementById('status').style.color = "#40a798";
-            document.getElementById('status').innerText = "กำลังบันทึกข้อมูลลง Google Sheets...";
+            document.getElementById('status').style.color = "#11999e";
+            document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
             const payload = { 
-                type: clockType, 
+                type: currentMode, 
                 userId: userId, 
                 userName: userName, 
-                lat: lat, 
-                lng: lng,
-                distance: calculatedDistance,
-                status: "ลงเวลาสำเร็จ"
+                lat: savedPosition.coords.latitude, 
+                lng: savedPosition.coords.longitude,
+                distance: 0,
+                status: currentMode === "in" ? "บันทึกข้อมูลลงเวลาเข้างาน" : "บันทึกข้อมูลลงเวลากลับสำเร็จ"
             };
 
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
 
                 document.getElementById('status').style.color = "#06C755";
-                document.getElementById('status').innerText = "บันทึกสำเร็จเรียบร้อย!";
                 
-                setTimeout(() => { 
-                    if (typeof liff !== 'undefined' && liff.isInClient()) {
-                        liff.closeWindow(); 
-                    }
+                if (currentMode === "in") {
+                    document.getElementById('status').innerText = "✅ บันทึกข้อมูลลงเวลาเข้างานสำเร็จ!";
+                } else {
+                    document.getElementById('status').innerText = "✅ บันทึกข้อมูลลงเวลากลับสำเร็จ!";
+                }
+                
+                // โหลดข้อมูลสถานะใหม่ทันทีเพื่ออัปเดตหน้าจอ
+                setTimeout(() => {
+                    fetchUserData(userId);
                 }, 1500);
+
             } catch (error) { 
                 console.error("Fetch error:", error);
                 document.getElementById('status').style.color = "#cc0000";
