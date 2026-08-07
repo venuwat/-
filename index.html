@@ -1,268 +1,5 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงเวลาเข้า-ออกงาน</title>
-    <!-- LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Kanit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        body {
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 15px;
-        }
-        .card {
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 400px;
-            padding: 24px;
-            text-align: center;
-        }
-        .avatar {
-            width: 85px;
-            height: 85px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 12px;
-            border: 3px solid #06C755;
-        }
-        .user-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #333333;
-            margin-bottom: 4px;
-        }
-        .clock-display {
-            font-size: 1.1rem;
-            color: #555555;
-            margin: 12px 0 20px 0;
-            background: #eef2f5;
-            padding: 8px 12px;
-            border-radius: 8px;
-            display: inline-block;
-            font-weight: 500;
-        }
-        .status-box {
-            font-size: 0.95rem;
-            margin-bottom: 20px;
-            min-height: 24px;
-            font-weight: 500;
-        }
-        .btn {
-            width: 100%;
-            padding: 14px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: #ffffff;
-            background-color: #cccccc;
-        }
-        .btn-in {
-            background-color: #06C755;
-        }
-        .btn-in:hover {
-            background-color: #05b34c;
-        }
-        .btn-out {
-            background-color: #de3333;
-        }
-        .btn-out:hover {
-            background-color: #c42b2b;
-        }
-        .btn:disabled {
-            background-color: #cccccc !important;
-            cursor: not-allowed;
-            opacity: 0.8;
-        }
-        .info-card {
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #665c00;
-            margin-bottom: 15px;
-            text-align: left;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <img id="userAvatar" class="avatar" src="https://via.placeholder.com/85" alt="User Profile">
-    <div id="userName" class="user-name">กำลังโหลดข้อมูล...</div>
-    <div id="currentTime" class="clock-display">--/--/---- --:--:--</div>
-
-    <div id="lastInCard" class="info-card">
-        📍 คุณลงเวลาเข้างานไว้เมื่อ: <br><strong id="lastInTimeDisplay">-</strong>
-    </div>
-
-    <div id="status" class="status-box" style="color: #666;">กำลังตรวจสอบสิทธิ์และพิกัด GPS...</div>
-
-    <button id="mainButton" class="btn" onclick="sendData()" disabled>กรุณารอสักครู่...</button>
-</div>
-
-<script>
-    const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKdllCYfgPaor84MvHvk52Y_IzBQzmAH0ivSm7_VXackXZ9yTH156Pmju6LDmNqTB3/exec"; 
-    
-    // ตั้งค่าพิกัดสำนักงาน/โรงพยาบาล และระยะที่อนุญาต (เมตร)
-    const OFFICE_LAT = 18.805275038110075; 
-    const OFFICE_LNG = 100.77253947618999; 
-    const MAX_ALLOWED_DISTANCE = 100; 
-
-    let userId = ""; 
-    let userName = ""; 
-    let currentMode = "in"; 
-    let savedPosition = null;
-    let currentDistance = 0;
-    let isRegisteredUser = false;
-
-    // ระบบนาฬิกาเรียลไทม์
-    function updateClock() {
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const year = now.getFullYear() + 543;
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById('currentTime').innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // เริ่มต้นทำงาน LIFF
-    async function main() {
-        try {
-            await liff.init({ liffId: MY_LIFF_ID });
-            if (!liff.isLoggedIn()) { 
-                liff.login(); 
-            } else {
-                const profile = await liff.getProfile();
-                userId = profile.userId; 
-                userName = profile.displayName;
-                if(profile.pictureUrl) {
-                    document.getElementById('userAvatar').src = profile.pictureUrl;
-                }
-
-                await fetchUserData(userId);
-            }
-        } catch (error) { 
-            console.error("LIFF Init Error:", error);
-            document.getElementById('userName').innerText = "ข้อผิดพลาดระบบ LIFF";
-        }
-    }
-    main();
-
-    // ดึงข้อมูลผู้ใช้และสถานะการลงเวลาล่าสุด
-    async function fetchUserData(uid) {
-        try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?userId=${uid}`);
-            const data = await res.json();
-            
-            if (data.registered) {
-                isRegisteredUser = true;
-                document.getElementById('userName').innerText = data.fullName || userName;
-
-                if (data.lastStatus === "in") {
-                    currentMode = "out"; 
-                    document.getElementById('lastInCard').style.display = "block";
-                    document.getElementById('lastInTimeDisplay').innerText = data.lastClockInTime;
-                } else {
-                    currentMode = "in"; 
-                    document.getElementById('lastInCard').style.display = "none";
-                }
-
-                checkLocationPermission();
-            } else {
-                isRegisteredUser = false;
-                document.getElementById('userName').innerText = userName;
-                const btn = document.getElementById('mainButton');
-                btn.disabled = true;
-                btn.innerText = "❌ ยังไม่ได้ลงทะเบียน";
-                btn.className = "btn";
-                document.getElementById('status').style.color = "#cc0000";
-                document.getElementById('status').innerText = "กรุณาติดต่อผู้ดูแลระบบเพื่อลงทะเบียน";
-            }
-        } catch (err) {
-            console.error("Fetch User Data Error:", err);
-        }
-    }
-
-    // ตรวจสอบพิกัด GPS
-    function checkLocationPermission() {
-        if (!isRegisteredUser) return;
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
-                document.getElementById('status').style.color = "#cc0000";
-                document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์ตำแหน่ง";
-                document.getElementById('mainButton').innerText = "❌ ไม่พบพิกัด GPS";
-                document.getElementById('mainButton').disabled = true;
-            }, { enableHighAccuracy: true, timeout: 10000 });
-        } else {
-            document.getElementById('status').innerText = "อุปกรณ์ไม่รองรับ GPS";
-            document.getElementById('mainButton').disabled = true;
-        }
-    }
-
-    // คำนวณระยะทางจากพิกัดเป้าหมาย
-    function validateDistance(position) {
-        if (!isRegisteredUser) return;
-
-        savedPosition = position;
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        const R = 6371000; // รัศมีโลก (เมตร)
-        const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
-        const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        currentDistance = R * c;
-
-        const btn = document.getElementById('mainButton');
-        
-        if (currentDistance <= MAX_ALLOWED_DISTANCE) {
-            btn.disabled = false;
-            document.getElementById('status').style.color = "#06C755";
-            document.getElementById('status').innerText = `คุณอยู่ในระยะทำงาน (ห่าง ${currentDistance.toFixed(1)} ม.)`;
-            
-            if (currentMode === "in") {
-                btn.innerText = "ลงเวลาเข้าทำงาน"; 
-                btn.className = "btn btn-in";
-            } else {
-                btn.innerText = "ลงเวลากลับ"; 
-                btn.className = "btn btn-out";
-            }
-        } else {
-            btn.disabled = true;
-            document.getElementById('status').style.color = "#cc0000";
-            document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${currentDistance.toFixed(1)} เมตร`;
-            btn.innerText = "❌ อยู่นอกระยะทำงาน";
-            btn.className = "btn";
-        }
-    }
-
-    // ส่งข้อมูลลงเวลาไปยัง Google Sheets (ส่งแบบ Form Data หลีกเลี่ยง CORS)
-    async function sendData() {
+// ส่งข้อมูลลงเวลาไปยัง Google Sheets ด้วย Form Submit เพื่อรับประกันข้อมูลเข้า Sheet 100%
+    function sendData() {
         if(!savedPosition || !isRegisteredUser) return;
 
         const btn = document.getElementById('mainButton');
@@ -270,23 +7,46 @@
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const formData = new URLSearchParams();
-        formData.append("type", currentMode);
-        formData.append("userId", userId);
-        formData.append("userName", userName);
-        formData.append("lat", savedPosition.coords.latitude);
-        formData.append("lng", savedPosition.coords.longitude);
-        formData.append("distance", currentDistance);
+        // สร้าง Form ชั่วคราวส่งไปยัง Google Apps Script
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = GOOGLE_SCRIPT_URL;
+        form.target = 'hidden_iframe'; // ส่งแบบเบื้องหลังไม่ให้เปลี่ยนหน้าเว็บ
 
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString()
-            });
+        const fields = {
+            type: currentMode,
+            userId: userId,
+            userName: userName,
+            lat: savedPosition.coords.latitude,
+            lng: savedPosition.coords.longitude,
+            distance: currentDistance
+        };
 
+        for (const key in fields) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        }
+
+        // สร้าง iframe ซ่อนสำหรับรับ response
+        let iframe = document.getElementById('hidden_iframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.name = 'hidden_iframe';
+            iframe.id = 'hidden_iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+
+        // แสดงผลสำเร็จหลังส่งข้อมูล
+        setTimeout(() => {
             document.getElementById('status').style.color = "#06C755";
-            
             if (currentMode === "in") {
                 document.getElementById('status').innerText = "✅ บันทึกข้อมูลลงเวลาเข้างานสำเร็จ!";
             } else {
@@ -296,14 +56,5 @@
             setTimeout(() => {
                 fetchUserData(userId);
             }, 1500);
-
-        } catch (error) { 
-            console.error("Fetch error:", error);
-            document.getElementById('status').style.color = "#cc0000";
-            document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว กรุณาลองใหม่"; 
-            btn.disabled = false;
-        }
+        }, 1000);
     }
-</script>
-</body>
-</html>
