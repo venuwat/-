@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ลงเวลาทำงาน รพ.ภูเพียง</title>
+    <title>ลงเวลาทำงานสหกรณ์ สสจ.น่าน</title>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIFF SDK -->
@@ -162,7 +162,7 @@
 
 <div class="card">
     <div class="header-title">
-        <h2>ลงเวลาทำงาน รพ.ภูเพียง </h2>
+        <h2>ลงเวลาทำงานสหกรณ์ สสจ.น่าน</h2>
         <p id="headerSub">Way Muangkaew</p>
     </div>
 
@@ -196,7 +196,6 @@
         <div id="userPos" class="user-pos"></div>
         <div id="currentTime" class="clock-display">--/--/---- --:--:--</div>
 
-        <!-- การ์ดแสดงเวลาเข้างานที่บันทึกแล้ว -->
         <div id="lastInCard" class="info-card">
             เวลาเข้างานของคุณคือ <br><strong id="lastInTimeDisplay" style="font-size: 1.1rem;">-</strong>
         </div>
@@ -206,16 +205,13 @@
     </div>
 </div>
 
-<!-- Hidden Form สำหรับส่งข้อมูลทะลุ Apps Script ไม่โดน CORS บล็อก -->
+<!-- Hidden Form สำหรับส่งข้อมูลลงเวลาเข้า-ออกงาน -->
 <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbxMZqvrVnIjqfHJ_rs-Vzea0XFL95bUgkaAcFO15Ea9ffPx-eDAtrPENXfYz4DYaJBq/exec" method="POST" target="hidden_iframe" style="display:none;">
     <input type="hidden" name="action" id="f_action">
     <input type="hidden" name="type" id="f_type">
     <input type="hidden" name="userId" id="f_userId">
     <input type="hidden" name="userName" id="f_userName">
-    <input type="hidden" name="firstName" id="f_firstName">
-    <input type="hidden" name="lastName" id="f_lastName">
-    <input type="hidden" name="position" id="f_position">
     <input type="hidden" name="lat" id="f_lat">
     <input type="hidden" name="lng" id="f_lng">
     <input type="hidden" name="distance" id="f_distance">
@@ -223,11 +219,11 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxd0LTREMsTwaE1BIawZqhHcAdShTKH5x2W--36-E4li6KoKlEgLXWaImS4wEa0IYl_/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHgXh-oPbTT5gGO_oHcX5m0sjMRCdlaIX6ALgBGbHGgQk3MkXWH4HaPkwuQPG2h_4/exec"; 
     
-   const OFFICE_LAT = 18.74652937167851; 
+    const OFFICE_LAT = 18.74652937167851; 
     const OFFICE_LNG = 100.79597359849127; 
-    const MAX_ALLOWED_DISTANCE = 150;
+    const MAX_ALLOWED_DISTANCE = 150; 
 
     let userId = ""; 
     let userName = ""; 
@@ -298,6 +294,7 @@
         document.body.appendChild(script);
     }
 
+    // ยืนยันการลงทะเบียน พร้อมเช็กความถูกต้อง
     function submitRegistration() {
         const firstName = document.getElementById('regFirstName').value.trim();
         const lastName = document.getElementById('regLastName').value.trim();
@@ -313,23 +310,29 @@
 
         btn.disabled = true;
         statusBox.style.color = "#007bff";
-        statusBox.innerText = "กำลังลงทะเบียน...";
+        statusBox.innerText = "กำลังตรวจสอบข้อมูลในระบบ...";
 
-        document.getElementById('f_action').value = "register";
-        document.getElementById('f_userId').value = userId;
-        document.getElementById('f_firstName').value = firstName;
-        document.getElementById('f_lastName').value = lastName;
-        document.getElementById('f_position').value = position;
+        // สร้าง Callback รับผลลัพธ์ลงทะเบียน
+        window.handleRegisterResponse = function(res) {
+            if (res && res.status === "success") {
+                statusBox.style.color = "#06C755";
+                statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
+                setTimeout(() => {
+                    fetchUserDataJSONP(userId);
+                }, 1000);
+            } else {
+                // กรณีไม่พบชื่อใน Employee_DB
+                statusBox.style.color = "#cc0000";
+                statusBox.innerText = res.message || "ลงทะเบียนไม่ถูกต้องติดต่อเจ้าหน้าที่ดูแล";
+                btn.disabled = false;
+            }
+        };
 
-        document.getElementById('hiddenForm').submit();
+        const url = `${GOOGLE_SCRIPT_URL}?action=register&userId=${encodeURIComponent(userId)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&position=${encodeURIComponent(position)}&callback=handleRegisterResponse&t=${new Date().getTime()}`;
 
-        setTimeout(() => {
-            statusBox.style.color = "#06C755";
-            statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
-            setTimeout(() => {
-                fetchUserDataJSONP(userId);
-            }, 1000);
-        }, 1500);
+        const script = document.createElement('script');
+        script.src = url;
+        document.body.appendChild(script);
     }
 
     function checkLocationPermission() {
