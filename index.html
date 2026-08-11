@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงเวลาเข้า-ออกงาน</title>
+    <title>ลงเวลาทำงานสหกรณ์ สสจ.น่าน</title>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIFF SDK -->
@@ -32,13 +32,30 @@
             padding: 24px;
             text-align: center;
         }
+        .header-title {
+            background-color: #008080;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+            margin: -24px -24px 20px -24px;
+        }
+        .header-title h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .header-title p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
         .avatar {
-            width: 85px;
-            height: 85px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 12px;
-            border: 3px solid #06C755;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         .user-name {
             font-size: 1.25rem;
@@ -49,7 +66,7 @@
         .user-pos {
             font-size: 0.95rem;
             color: #666666;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         .clock-display {
             font-size: 1.1rem;
@@ -80,29 +97,27 @@
             background-color: #007bff;
         }
         .btn-in { background-color: #06C755; }
-        .btn-in:hover { background-color: #05b34c; }
         .btn-out { background-color: #de3333; }
-        .btn-out:hover { background-color: #c42b2b; }
         .btn:disabled {
             background-color: #cccccc !important;
             cursor: not-allowed;
             opacity: 0.8;
         }
         .info-card {
-            background-color: #fff8e1;
-            border-left: 4px solid #ffc107;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #665c00;
-            margin-bottom: 15px;
-            text-align: left;
+            background-color: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #2e7d32;
+            margin-bottom: 20px;
+            text-align: center;
             display: none;
         }
 
-        /* รูปแบบฟอร์มลงทะเบียน */
+        /* ฟอร์มลงทะเบียน */
         .register-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: #333;
             margin-bottom: 6px;
@@ -146,19 +161,24 @@
 <body>
 
 <div class="card">
-    <img id="userAvatar" class="avatar" src="https://via.placeholder.com/85" alt="User Profile">
+    <div class="header-title">
+        <h2>ลงเวลาทำงานสหกรณ์ สสจ.น่าน</h2>
+        <p id="headerSub">Way Muangkaew</p>
+    </div>
+
+    <img id="userAvatar" class="avatar" src="https://via.placeholder.com/90" alt="User Profile">
     
-    <!-- 1. หน้าฟอร์มลงทะเบียน (แสดงเมื่อยังไม่ผูก User ID) -->
+    <!-- 1. ส่วนลงทะเบียน -->
     <div id="registerSection">
-        <div class="register-title">ลงทะเบียน</div>
-        <div class="register-subtitle">ระบบลงเวลาทำงาน</div>
+        <div class="register-title">ลงทะเบียนใหม่</div>
+        <div class="register-subtitle">กรอก ชื่อ-สกุล เพื่อจับคู่กับระบบ</div>
         
         <div class="input-group">
-            <input type="text" id="regFirstName" placeholder="ชื่อ(ไม่ต้องกรอกคำนำหน้า)">
+            <input type="text" id="regFirstName" placeholder="ชื่อ (ไม่ต้องกรอกคำนำหน้า)">
             <div class="icon-box"><i class="fa-solid fa-user"></i></div>
         </div>
         <div class="input-group">
-            <input type="text" id="regLastName" placeholder="สกุล">
+            <input type="text" id="regLastName" placeholder="นามสกุล">
             <div class="icon-box"><i class="fa-solid fa-user"></i></div>
         </div>
         <div class="input-group">
@@ -170,14 +190,15 @@
         <button id="btnRegister" class="btn" onclick="submitRegistration()">ลงทะเบียน</button>
     </div>
 
-    <!-- 2. หน้าลงเวลาเข้า-ออกงานปกติ -->
+    <!-- 2. ส่วนลงเวลาเข้า-ออกงาน -->
     <div id="clockSection">
         <div id="userName" class="user-name">กำลังโหลดข้อมูล...</div>
         <div id="userPos" class="user-pos"></div>
         <div id="currentTime" class="clock-display">--/--/---- --:--:--</div>
 
+        <!-- การ์ดแสดงเวลาเข้างานที่บันทึกแล้ว -->
         <div id="lastInCard" class="info-card">
-            📍 คุณลงเวลาเข้างานไว้เมื่อ: <br><strong id="lastInTimeDisplay">-</strong>
+            เวลาเข้างานของคุณคือ <br><strong id="lastInTimeDisplay" style="font-size: 1.1rem;">-</strong>
         </div>
 
         <div id="status" class="status-box" style="color: #666;">กำลังตรวจสอบสิทธิ์และพิกัด GPS...</div>
@@ -185,12 +206,26 @@
     </div>
 </div>
 
+<!-- Hidden Form สำหรับส่งข้อมูลทะลุ Apps Script ไม่โดน CORS บล็อก -->
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+<form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbxMZqvrVnIjqfHJ_rs-Vzea0XFL95bUgkaAcFO15Ea9ffPx-eDAtrPENXfYz4DYaJBq/exec" method="POST" target="hidden_iframe" style="display:none;">
+    <input type="hidden" name="action" id="f_action">
+    <input type="hidden" name="type" id="f_type">
+    <input type="hidden" name="userId" id="f_userId">
+    <input type="hidden" name="userName" id="f_userName">
+    <input type="hidden" name="firstName" id="f_firstName">
+    <input type="hidden" name="lastName" id="f_lastName">
+    <input type="hidden" name="position" id="f_position">
+    <input type="hidden" name="lat" id="f_lat">
+    <input type="hidden" name="lng" id="f_lng">
+    <input type="hidden" name="distance" id="f_distance">
+</form>
+
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj5rYB9Ee-zPPY_OAirAvup7x41Vuby6E72ibgOVSdNk-vdku2YmMzYrzfqCz5l3Op/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxd0LTREMsTwaE1BIawZqhHcAdShTKH5x2W--36-E4li6KoKlEgLXWaImS4wEa0IYl_/exec"; 
     
-    // พิกัดสถานที่และระยะทางอนุญาต (เมตร)
-    const OFFICE_LAT = 18.805344328836977; 
+   const OFFICE_LAT = 18.805344328836977; 
     const OFFICE_LNG = 100.7727790482705; 
     const MAX_ALLOWED_DISTANCE = 150;
 
@@ -200,7 +235,6 @@
     let savedPosition = null;
     let currentDistance = 0;
 
-    // นาฬิกาเรียลไทม์
     function updateClock() {
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -214,7 +248,6 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // เริ่มต้น LIFF
     async function main() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
@@ -224,6 +257,7 @@
                 const profile = await liff.getProfile();
                 userId = profile.userId; 
                 userName = profile.displayName;
+                document.getElementById('headerSub').innerText = userName;
                 if(profile.pictureUrl) {
                     document.getElementById('userAvatar').src = profile.pictureUrl;
                 }
@@ -236,11 +270,9 @@
     }
     main();
 
-    // เช็กสถานะการลงทะเบียนและประวัติการลงเวลา
     function fetchUserDataJSONP(uid) {
         window.handleUserData = function(data) {
             if (data && data.registered) {
-                // เคยลงทะเบียนแล้ว -> ไปหน้าลงเวลา
                 document.getElementById('registerSection').style.display = "none";
                 document.getElementById('clockSection').style.display = "block";
                 document.getElementById('userName').innerText = `${data.firstName} ${data.lastName}`;
@@ -256,7 +288,6 @@
                 }
                 checkLocationPermission();
             } else {
-                // ยังไม่ลงทะเบียน -> ไปหน้าลงทะเบียน
                 document.getElementById('registerSection').style.display = "block";
                 document.getElementById('clockSection').style.display = "none";
             }
@@ -267,8 +298,7 @@
         document.body.appendChild(script);
     }
 
-    // ยืนยันข้อมูลลงทะเบียน
-    async function submitRegistration() {
+    function submitRegistration() {
         const firstName = document.getElementById('regFirstName').value.trim();
         const lastName = document.getElementById('regLastName').value.trim();
         const position = document.getElementById('regPosition').value.trim();
@@ -283,45 +313,25 @@
 
         btn.disabled = true;
         statusBox.style.color = "#007bff";
-        statusBox.innerText = "กำลังตรวจสอบข้อมูลในระบบ...";
+        statusBox.innerText = "กำลังลงทะเบียน...";
 
-        const payload = {
-            action: "register",
-            userId: userId,
-            firstName: firstName,
-            lastName: lastName,
-            position: position
-        };
+        document.getElementById('f_action').value = "register";
+        document.getElementById('f_userId').value = userId;
+        document.getElementById('f_firstName').value = firstName;
+        document.getElementById('f_lastName').value = lastName;
+        document.getElementById('f_position').value = position;
 
-        try {
-            const bodyData = new URLSearchParams();
-            for (const key in payload) {
-                bodyData.append(key, payload[key]);
-            }
+        document.getElementById('hiddenForm').submit();
 
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: bodyData.toString()
-            });
-
+        setTimeout(() => {
             statusBox.style.color = "#06C755";
-            statusBox.innerText = "✅ ส่งข้อมูลลงทะเบียนแล้ว กำลังเข้าสู่ระบบ...";
-            
+            statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
             setTimeout(() => {
                 fetchUserDataJSONP(userId);
-            }, 2000);
-
-        } catch (err) {
-            console.error("Register Error:", err);
-            statusBox.style.color = "#cc0000";
-            statusBox.innerText = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อระบบ";
-            btn.disabled = false;
-        }
+            }, 1000);
+        }, 1500);
     }
 
-    // เช็กพิกัด GPS
     function checkLocationPermission() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
@@ -336,7 +346,6 @@
         }
     }
 
-    // คำนวณระยะห่าง
     function validateDistance(position) {
         savedPosition = position;
         const lat = position.coords.latitude;
@@ -353,14 +362,15 @@
         
         if (currentDistance <= MAX_ALLOWED_DISTANCE) {
             btn.disabled = false;
-            document.getElementById('status').style.color = "#06C755";
-            document.getElementById('status').innerText = `คุณอยู่ในระยะทำงาน (ห่าง ${currentDistance.toFixed(1)} ม.)`;
             
             if (currentMode === "in") {
+                document.getElementById('status').style.color = "#06C755";
+                document.getElementById('status').innerText = `อยู่ในระยะทำงาน (${currentDistance.toFixed(1)} ม.)`;
                 btn.innerText = "ลงเวลาเข้าทำงาน"; 
                 btn.className = "btn btn-in";
             } else {
-                btn.innerText = "ลงเวลากลับบ้าน"; 
+                document.getElementById('status').innerText = "";
+                btn.innerText = "ลงเวลากลับ"; 
                 btn.className = "btn btn-out";
             }
         } else {
@@ -372,8 +382,7 @@
         }
     }
 
-    // บันทึกเวลาเข้า-ออกงาน
-    async function sendClockData() {
+    function sendClockData() {
         if (!savedPosition) return;
 
         const btn = document.getElementById('mainButton');
@@ -381,46 +390,19 @@
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const payload = {
-            action: "clock",
-            type: currentMode,
-            userId: userId,
-            userName: userName,
-            lat: savedPosition.coords.latitude,
-            lng: savedPosition.coords.longitude,
-            distance: currentDistance
-        };
+        document.getElementById('f_action').value = "clock";
+        document.getElementById('f_type').value = currentMode;
+        document.getElementById('f_userId').value = userId;
+        document.getElementById('f_userName').value = userName;
+        document.getElementById('f_lat').value = savedPosition.coords.latitude;
+        document.getElementById('f_lng').value = savedPosition.coords.longitude;
+        document.getElementById('f_distance').value = currentDistance;
 
-        try {
-            const bodyData = new URLSearchParams();
-            for (const key in payload) {
-                bodyData.append(key, payload[key]);
-            }
+        document.getElementById('hiddenForm').submit();
 
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: bodyData.toString()
-            });
-
-            document.getElementById('status').style.color = "#06C755";
-            document.getElementById('status').innerText = (currentMode === "in") ? "✅ บันทึกข้อมูลลงเวลาเข้างานสำเร็จ!" : "✅ บันทึกข้อมูลลงเวลากลับสำเร็จ!";
-            
-            setTimeout(() => {
-                if (liff.isInClient()) {
-                    liff.closeWindow();
-                } else {
-                    location.reload();
-                }
-            }, 2500);
-
-        } catch (error) { 
-            console.error("Clock error:", error);
-            document.getElementById('status').style.color = "#cc0000";
-            document.getElementById('status').innerText = "บันทึกข้อมูลล้มเหลว กรุณาลองใหม่"; 
-            btn.disabled = false;
-        }
+        setTimeout(() => {
+            fetchUserDataJSONP(userId);
+        }, 1800);
     }
 </script>
 </body>
