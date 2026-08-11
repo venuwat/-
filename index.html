@@ -170,7 +170,7 @@
         <button id="btnRegister" class="btn" onclick="submitRegistration()">ลงทะเบียน</button>
     </div>
 
-    <!-- 2. หน้าลงเวลาเข้า-ออกงานปกติ (แสดงเมื่อพบข้อมูลผูกไว้แล้ว) -->
+    <!-- 2. หน้าลงเวลาเข้า-ออกงานปกติ -->
     <div id="clockSection">
         <div id="userName" class="user-name">กำลังโหลดข้อมูล...</div>
         <div id="userPos" class="user-pos"></div>
@@ -187,12 +187,12 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXPS6BSxS4GVx69kw0Fv8fBaT9dS-er-3ndLHtceZxp9hYDBUd8J49au0_BX4WiHvm/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj5rYB9Ee-zPPY_OAirAvup7x41Vuby6E72ibgOVSdNk-vdku2YmMzYrzfqCz5l3Op/exec"; 
     
     // พิกัดสถานที่และระยะทางอนุญาต (เมตร)
     const OFFICE_LAT = 18.805344328836977; 
     const OFFICE_LNG = 100.7727790482705; 
-    const MAX_ALLOWED_DISTANCE = 150; 
+    const MAX_ALLOWED_DISTANCE = 150;
 
     let userId = ""; 
     let userName = ""; 
@@ -200,7 +200,7 @@
     let savedPosition = null;
     let currentDistance = 0;
 
-    // ระบบนาฬิกาเรียลไทม์
+    // นาฬิกาเรียลไทม์
     function updateClock() {
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -214,7 +214,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // เริ่มต้นเชื่อมต่อ LIFF
+    // เริ่มต้น LIFF
     async function main() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
@@ -236,11 +236,11 @@
     }
     main();
 
-    // ตรวจสอบการลงทะเบียน และดึงสถานะเข้า-ออกงานล่าสุด
+    // เช็กสถานะการลงทะเบียนและประวัติการลงเวลา
     function fetchUserDataJSONP(uid) {
         window.handleUserData = function(data) {
             if (data && data.registered) {
-                // กรณีพบข้อมูลการลงทะเบียน
+                // เคยลงทะเบียนแล้ว -> ไปหน้าลงเวลา
                 document.getElementById('registerSection').style.display = "none";
                 document.getElementById('clockSection').style.display = "block";
                 document.getElementById('userName').innerText = `${data.firstName} ${data.lastName}`;
@@ -256,18 +256,18 @@
                 }
                 checkLocationPermission();
             } else {
-                // กรณียังไม่ได้ลงทะเบียน
+                // ยังไม่ลงทะเบียน -> ไปหน้าลงทะเบียน
                 document.getElementById('registerSection').style.display = "block";
                 document.getElementById('clockSection').style.display = "none";
             }
         };
 
         const script = document.createElement('script');
-        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserData`;
+        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserData&t=${new Date().getTime()}`;
         document.body.appendChild(script);
     }
 
-    // ส่งข้อมูลลงทะเบียนแมตช์ ชื่อ-สกุล
+    // ยืนยันข้อมูลลงทะเบียน
     async function submitRegistration() {
         const firstName = document.getElementById('regFirstName').value.trim();
         const lastName = document.getElementById('regLastName').value.trim();
@@ -285,33 +285,34 @@
         statusBox.style.color = "#007bff";
         statusBox.innerText = "กำลังตรวจสอบข้อมูลในระบบ...";
 
-        const payload = JSON.stringify({
+        const payload = {
             action: "register",
             userId: userId,
             firstName: firstName,
             lastName: lastName,
             position: position
-        });
+        };
 
         try {
-            const res = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: payload
-            });
-            const data = await res.json();
-
-            if (data.status === "success") {
-                statusBox.style.color = "#06C755";
-                statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
-                setTimeout(() => {
-                    fetchUserDataJSONP(userId);
-                }, 1200);
-            } else {
-                statusBox.style.color = "#cc0000";
-                statusBox.innerText = `❌ ${data.message || 'ไม่พบข้อมูลในระบบ'}`;
-                btn.disabled = false;
+            const bodyData = new URLSearchParams();
+            for (const key in payload) {
+                bodyData.append(key, payload[key]);
             }
+
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: bodyData.toString()
+            });
+
+            statusBox.style.color = "#06C755";
+            statusBox.innerText = "✅ ส่งข้อมูลลงทะเบียนแล้ว กำลังเข้าสู่ระบบ...";
+            
+            setTimeout(() => {
+                fetchUserDataJSONP(userId);
+            }, 2000);
+
         } catch (err) {
             console.error("Register Error:", err);
             statusBox.style.color = "#cc0000";
@@ -320,7 +321,7 @@
         }
     }
 
-    // ตรวจสอบตำแหน่ง GPS
+    // เช็กพิกัด GPS
     function checkLocationPermission() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
@@ -335,7 +336,7 @@
         }
     }
 
-    // คำนวณระยะห่างระหว่าง User กับ พิกัดเป้าหมาย
+    // คำนวณระยะห่าง
     function validateDistance(position) {
         savedPosition = position;
         const lat = position.coords.latitude;
@@ -373,14 +374,14 @@
 
     // บันทึกเวลาเข้า-ออกงาน
     async function sendClockData() {
-        if(!savedPosition) return;
+        if (!savedPosition) return;
 
         const btn = document.getElementById('mainButton');
         btn.disabled = true;
         document.getElementById('status').style.color = "#11999e";
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-        const payload = JSON.stringify({
+        const payload = {
             action: "clock",
             type: currentMode,
             userId: userId,
@@ -388,13 +389,19 @@
             lat: savedPosition.coords.latitude,
             lng: savedPosition.coords.longitude,
             distance: currentDistance
-        });
+        };
 
         try {
+            const bodyData = new URLSearchParams();
+            for (const key in payload) {
+                bodyData.append(key, payload[key]);
+            }
+
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: payload
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: bodyData.toString()
             });
 
             document.getElementById('status').style.color = "#06C755";
@@ -404,9 +411,9 @@
                 if (liff.isInClient()) {
                     liff.closeWindow();
                 } else {
-                    fetchUserDataJSONP(userId);
+                    location.reload();
                 }
-            }, 1500);
+            }, 2500);
 
         } catch (error) { 
             console.error("Clock error:", error);
