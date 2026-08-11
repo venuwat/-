@@ -163,7 +163,7 @@
 <div class="card">
     <div class="header-title">
         <h2>ลงเวลาทำงานรพ.ภูเพียง</h2>
-        <p id="headerSub">Way Muangkaew</p>
+        <p id="headerSub">ระบบลงเวลาปฏิบัติงาน</p>
     </div>
 
     <img id="userAvatar" class="avatar" src="https://via.placeholder.com/90" alt="User Profile">
@@ -207,7 +207,7 @@
 
 <!-- Hidden Form สำหรับส่งข้อมูล -->
 <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-<form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbxMZqvrVnIjqfHJ_rs-Vzea0XFL95bUgkaAcFO15Ea9ffPx-eDAtrPENXfYz4DYaJBq/exec" method="POST" target="hidden_iframe" style="display:none;">
+<form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbxEmWaMleuGoIBrJcVK3sFxIVRbILdttcPgjbL2Qo2VgAwbLRWX8zbw-ORWvFo9MqO5/exec" method="POST" target="hidden_iframe" style="display:none;">
     <input type="hidden" name="action" id="f_action">
     <input type="hidden" name="type" id="f_type">
     <input type="hidden" name="userId" id="f_userId">
@@ -222,8 +222,9 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEmWaMleuGoIBrJcVK3sFxIVRbILdttcPgjbL2Qo2VgAwbLRWX8zbw-ORWvFo9MqO5/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxYtGt2iOxZGCKvQC2szRLbFTbWJgLFLBDgfd69HFkEQiJnUF3mrOhx0zPJ-JP7mVuM/exec"; 
     
+    // พิกัดโรงพยาบาลภูเพียง
     const OFFICE_LAT = 18.74652937167851; 
     const OFFICE_LNG = 100.79597359849127; 
     const MAX_ALLOWED_DISTANCE = 150; 
@@ -274,8 +275,11 @@
             if (data && data.registered) {
                 document.getElementById('registerSection').style.display = "none";
                 document.getElementById('clockSection').style.display = "block";
-                document.getElementById('userName').innerText = `${data.firstName} ${data.lastName}`;
-                document.getElementById('userPos').innerText = data.position ? `ตำแหน่ง: ${data.position}` : "";
+                
+                // ดึงชื่อ สกุล และตำแหน่งจริงที่ตรงกับ Employee_DB
+                const fullName = `${data.firstName} ${data.lastName}`.trim();
+                document.getElementById('userName').innerText = fullName || "ไม่ระบุชื่อ";
+                document.getElementById('userPos').innerText = data.position ? `ตำแหน่ง: ${data.position}` : "ตำแหน่ง: -";
 
                 if (data.lastStatus === "in") {
                     currentMode = "out"; 
