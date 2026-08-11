@@ -120,7 +120,7 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPBkJIlfJizMthse5fUYQvBOA2oJL16JA8Vcki5XfvndllzRiUsmpJi7ZCBrWSNjHY/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySovvFq7JIm0kQK8erUmI7eNzF6MUokvcMBSxpl9-FJ3Wr-T6R0T_idzukAptV0hYa/exec"; 
     
     // พิกัดสถานที่และระยะที่อนุญาต (เมตร)
     const OFFICE_LAT = 18.805344328836977; 
@@ -132,7 +132,6 @@
     let currentMode = "in"; 
     let savedPosition = null;
     let currentDistance = 0;
-    let isRegisteredUser = false;
 
     // นาฬิกาเรียลไทม์
     function updateClock() {
@@ -168,20 +167,18 @@
             console.error("LIFF Init Error:", error);
             userName = "ผู้ใช้งาน LINE";
             document.getElementById('userName').innerText = userName;
-            isRegisteredUser = true;
             checkLocationPermission();
         }
     }
     main();
 
-    // ดึงข้อมูลผู้ใช้ (มีระบบ Timeout 3 วินาที ป้องกันค้าง 100%)
+    // ดึงข้อมูลผู้ใช้จาก Employee_DB และสถานะล่าสุดผ่าน JSONP
     function fetchUserDataJSONP(uid) {
         let isHandled = false;
 
         const timeout = setTimeout(() => {
             if (!isHandled) {
                 isHandled = true;
-                isRegisteredUser = true;
                 document.getElementById('userName').innerText = userName;
                 checkLocationPermission();
             }
@@ -193,8 +190,7 @@
             clearTimeout(timeout);
             
             if (data && data.registered) {
-                isRegisteredUser = true;
-                document.getElementById('userName').innerText = data.fullName || userName;
+                document.getElementById('userName').innerText = data.fullName;
 
                 if (data.lastStatus === "in") {
                     currentMode = "out"; 
@@ -205,8 +201,7 @@
                     document.getElementById('lastInCard').style.display = "none";
                 }
             } else {
-                isRegisteredUser = true;
-                document.getElementById('userName').innerText = userName;
+                document.getElementById('userName').innerText = userName + " (ยังไม่ได้ลงทะเบียน)";
             }
             
             checkLocationPermission();
@@ -218,7 +213,6 @@
             if (isHandled) return;
             isHandled = true;
             clearTimeout(timeout);
-            isRegisteredUser = true;
             document.getElementById('userName').innerText = userName;
             checkLocationPermission();
         };
@@ -264,7 +258,7 @@
                 btn.innerText = "ลงเวลาเข้าทำงาน"; 
                 btn.className = "btn btn-in";
             } else {
-                btn.innerText = "ลงเวลากลับ"; 
+                btn.innerText = "ลงเวลากลับบ้าน"; 
                 btn.className = "btn btn-out";
             }
         } else {
@@ -276,7 +270,7 @@
         }
     }
 
-    // บันทึกข้อมูล (แก้ไขการส่ง payload แบบ JSON + text/plain เพื่อให้ผ่าน CORS ชัวร์)
+    // ส่งข้อมูลเข้าบันทึก
     async function sendData() {
         if(!savedPosition) return;
 
@@ -286,6 +280,7 @@
         document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
         const payload = JSON.stringify({
+            action: "clock",
             type: currentMode,
             userId: userId,
             userName: userName,
@@ -309,7 +304,11 @@
             }
             
             setTimeout(() => {
-                fetchUserDataJSONP(userId);
+                if (liff.isInClient()) {
+                    liff.closeWindow();
+                } else {
+                    fetchUserDataJSONP(userId);
+                }
             }, 1500);
 
         } catch (error) { 
