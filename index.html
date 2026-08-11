@@ -205,13 +205,16 @@
     </div>
 </div>
 
-<!-- Hidden Form สำหรับส่งข้อมูลลงเวลาเข้า-ออกงาน -->
+<!-- Hidden Form สำหรับส่งข้อมูล -->
 <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbxMZqvrVnIjqfHJ_rs-Vzea0XFL95bUgkaAcFO15Ea9ffPx-eDAtrPENXfYz4DYaJBq/exec" method="POST" target="hidden_iframe" style="display:none;">
     <input type="hidden" name="action" id="f_action">
     <input type="hidden" name="type" id="f_type">
     <input type="hidden" name="userId" id="f_userId">
     <input type="hidden" name="userName" id="f_userName">
+    <input type="hidden" name="firstName" id="f_firstName">
+    <input type="hidden" name="lastName" id="f_lastName">
+    <input type="hidden" name="position" id="f_position">
     <input type="hidden" name="lat" id="f_lat">
     <input type="hidden" name="lng" id="f_lng">
     <input type="hidden" name="distance" id="f_distance">
@@ -219,7 +222,7 @@
 
 <script>
     const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHgXh-oPbTT5gGO_oHcX5m0sjMRCdlaIX6ALgBGbHGgQk3MkXWH4HaPkwuQPG2h_4/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxxUUrXd_NCFEKSwEQaCw2mOrO3bs54ATA0O3eqREmjMB8EPO1BB4l8bZRfPeBKd6j/exec"; 
     
     const OFFICE_LAT = 18.74652937167851; 
     const OFFICE_LNG = 100.79597359849127; 
@@ -294,7 +297,7 @@
         document.body.appendChild(script);
     }
 
-    // ยืนยันการลงทะเบียน พร้อมเช็กความถูกต้อง
+    // ยืนยันการลงทะเบียนผ่าน Form
     function submitRegistration() {
         const firstName = document.getElementById('regFirstName').value.trim();
         const lastName = document.getElementById('regLastName').value.trim();
@@ -310,28 +313,43 @@
 
         btn.disabled = true;
         statusBox.style.color = "#007bff";
-        statusBox.innerText = "กำลังตรวจสอบข้อมูลในระบบ...";
+        statusBox.innerText = "กำลังตรวจสอบข้อมูล...";
 
-        // สร้าง Callback รับผลลัพธ์ลงทะเบียน
-        window.handleRegisterResponse = function(res) {
-            if (res && res.status === "success") {
+        document.getElementById('f_action').value = "register";
+        document.getElementById('f_userId').value = userId;
+        document.getElementById('f_firstName').value = firstName;
+        document.getElementById('f_lastName').value = lastName;
+        document.getElementById('f_position').value = position;
+
+        document.getElementById('hiddenForm').submit();
+
+        // รอ Apps Script ทำงาน แล้วตรวจสอบว่าลงทะเบียนสำเร็จหรือไม่
+        setTimeout(() => {
+            fetchUserDataJSONPCheck(userId);
+        }, 2000);
+    }
+
+    // ตรวจสอบผลหลังลงทะเบียน
+    function fetchUserDataJSONPCheck(uid) {
+        const btn = document.getElementById('btnRegister');
+        const statusBox = document.getElementById('regStatus');
+
+        window.handleUserDataCheck = function(data) {
+            if (data && data.registered) {
                 statusBox.style.color = "#06C755";
                 statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
                 setTimeout(() => {
-                    fetchUserDataJSONP(userId);
+                    fetchUserDataJSONP(uid);
                 }, 1000);
             } else {
-                // กรณีไม่พบชื่อใน Employee_DB
                 statusBox.style.color = "#cc0000";
-                statusBox.innerText = res.message || "ลงทะเบียนไม่ถูกต้องติดต่อเจ้าหน้าที่ดูแล";
+                statusBox.innerText = "ลงทะเบียนไม่ถูกต้องติดต่อเจ้าหน้าที่ดูแล";
                 btn.disabled = false;
             }
         };
 
-        const url = `${GOOGLE_SCRIPT_URL}?action=register&userId=${encodeURIComponent(userId)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&position=${encodeURIComponent(position)}&callback=handleRegisterResponse&t=${new Date().getTime()}`;
-
         const script = document.createElement('script');
-        script.src = url;
+        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserDataCheck&t=${new Date().getTime()}`;
         document.body.appendChild(script);
     }
 
