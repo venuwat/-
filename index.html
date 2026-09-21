@@ -3,351 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงเวลาปฏิบัติงาน</title>
+    <title>ลงเวลาทำงาน รพ.ภูเพียง</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         * {
             box-sizing: border-box;
-            font-family: 'Kanit', sans-serif, Tahoma;
+            margin: 0;
+            padding: 0;
+            font-family: 'Kanit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         body {
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
+            background-color: #f4f6f9;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 15px;
         }
         .card {
             background: #ffffff;
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             padding: 24px;
             text-align: center;
         }
-        h2 {
-            margin-top: 0;
-            color: #333;
+        .header-title {
+            background-color: #008080;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+            margin: -24px -24px 20px -24px;
         }
-        .profile-img {
+        .header-title h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .header-title p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+        .avatar {
             width: 90px;
             height: 90px;
             border-radius: 50%;
-            margin: 10px auto;
-            border: 3px solid #06C755;
             object-fit: cover;
+            margin-bottom: 12px;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
-        .user-info {
-            background: #f8f9fa;
+        .user-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 4px;
+        }
+        .user-pos {
+            font-size: 0.95rem;
+            color: #666666;
+            margin-bottom: 12px;
+        }
+        .clock-display {
+            font-size: 1.1rem;
+            color: #555555;
+            margin: 12px 0 20px 0;
+            background: #eef2f5;
+            padding: 8px 12px;
             border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 15px;
-            color: #444;
-        }
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
+            display: inline-block;
             font-weight: 500;
-            color: #555;
         }
-        .input-group input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 15px;
+        .status-box {
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            min-height: 24px;
+            font-weight: 500;
         }
         .btn {
             width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #ffffff;
+            background-color: #007bff;
+        }
+        .btn-in { background-color: #06C755; }
+        .btn-out { background-color: #de3333; }
+        .btn:disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .info-card {
+            background-color: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #2e7d32;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        /* ฟอร์มลงทะเบียน */
+        .register-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .register-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #cccccc;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .input-group input {
+            flex: 1;
             padding: 12px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: 0.2s;
+            outline: none;
+            font-size: 0.95rem;
         }
-        .btn-primary {
-            background-color: #06C755;
-            color: white;
+        .input-group .icon-box {
+            width: 45px;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #495057;
+            padding: 12px;
+            border-left: 1px solid #cccccc;
         }
-        .btn-primary:hover {
-            background-color: #05b04b;
-        }
-        .btn-danger {
-            background-color: #de350b;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #bf2600;
-        }
-        .btn:disabled {
-            background-color: #ccc !important;
-            cursor: not-allowed;
-        }
-        .status-msg {
-            margin-top: 10px;
-            font-size: 14px;
-            min-height: 20px;
-            font-weight: 500;
-        }
-        .hidden {
-            display: none !important;
+        #registerSection, #clockSection {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>ลงเวลาปฏิบัติงาน</h2>
-        
-        <!-- รูปโปรไฟล์ LINE -->
-        <img id="pictureUrl" class="profile-img hidden" src="" alt="Profile Picture">
-        <p id="displayName" style="font-weight: bold; margin: 5px 0 15px 0;"></p>
-
-        <!-- Loader สถาะเริ่มต้น -->
-        <div id="loading" style="padding: 20px;">
-            <p>กำลังโหลดข้อมูล...</p>
-        </div>
-
-        <!-- ฟอร์มสำหรับลงทะเบียน (แสดงเฉพาะผู้ที่ยังไม่ได้ลงทะเบียน) -->
-        <div id="registrationForm" class="hidden">
-            <h4 style="margin-bottom: 15px; color: #555;">ลงทะเบียนใช้งานระบบ</h4>
-            <div class="input-group">
-                <label>ชื่อจริง:</label>
-                <input type="text" id="regFirstName" placeholder="กรอกชื่อจริง">
-            </div>
-            <div class="input-group">
-                <label>นามสกุล:</label>
-                <input type="text" id="regLastName" placeholder="กรอกนามสกุล">
-            </div>
-            <div class="input-group">
-                <label>ตำแหน่ง (ถ้ามี):</label>
-                <input type="text" id="regPosition" placeholder="กรอกตำแหน่ง">
-            </div>
-            <button id="btnRegister" class="btn btn-primary" onclick="submitRegistration()">ยืนยันการลงทะเบียน</button>
-            <div id="regStatus" class="status-msg"></div>
-        </div>
-
-        <!-- หน้าจอลงเวลา (แสดงเฉพาะผู้ที่ลงทะเบียนแล้ว) -->
-        <div id="clockSection" class="hidden">
-            <div class="user-info">
-                <div><strong>ชื่อ-สกุล:</strong> <span id="empFullName">-</span></div>
-                <div><strong>ตำแหน่ง:</strong> <span id="empPosition">-</span></div>
-                <div id="lastTimeBox" style="margin-top: 5px; color: #666; font-size: 13px;"></div>
-            </div>
-
-            <button id="btnClockIn" class="btn btn-primary" onclick="handleClock('in')">เข้างาน</button>
-            <button id="btnClockOut" class="btn btn-danger" onclick="handleClock('out')">ออกงาน</button>
-            <div id="clockStatus" class="status-msg"></div>
-        </div>
+<div class="card">
+    <div class="header-title">
+        <h2>ลงเวลาทำงานรพ.ภูเพียง</h2>
+        <p id="headerSub">ระบบลงเวลาปฏิบัติงาน</p>
     </div>
 
-    <!-- Hidden Form & Hidden Iframe สำหรับส่งข้อมูลแบบ Cross-Domain โดยไม่เปลี่ยนหน้า -->
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="hiddenForm" action="" method="POST" target="hidden_iframe" style="display:none;">
-        <input type="hidden" name="action" id="f_action">
-        <input type="hidden" name="userId" id="f_userId">
-        <input type="hidden" name="userName" id="f_userName">
-        <input type="hidden" name="firstName" id="f_firstName">
-        <input type="hidden" name="lastName" id="f_lastName">
-        <input type="hidden" name="position" id="f_position">
-        <input type="hidden" name="type" id="f_type">
-        <input type="hidden" name="lat" id="f_lat">
-        <input type="hidden" name="lng" id="f_lng">
-        <input type="hidden" name="distance" id="f_distance">
-    </form>
+    <img id="userAvatar" class="avatar" src="https://via.placeholder.com/90" alt="User Profile">
+    
+    <!-- 1. ส่วนลงทะเบียน -->
+    <div id="registerSection">
+        <div class="register-title">ลงทะเบียนใหม่</div>
+        <div class="register-subtitle">กรอก ชื่อ-สกุล เพื่อจับคู่กับระบบ</div>
+        
+        <div class="input-group">
+            <input type="text" id="regFirstName" placeholder="ชื่อ (ไม่ต้องกรอกคำนำหน้า)">
+            <div class="icon-box"><i class="fa-solid fa-user"></i></div>
+        </div>
+        <div class="input-group">
+            <input type="text" id="regLastName" placeholder="นามสกุล">
+            <div class="icon-box"><i class="fa-solid fa-user"></i></div>
+        </div>
+        <div class="input-group">
+            <input type="text" id="regPosition" placeholder="ตำแหน่ง">
+            <div class="icon-box"><i class="fa-solid fa-user-tag"></i></div>
+        </div>
 
-  <script>
-        const MY_LIFF_ID = "2010980900-k8VaJicy"; 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOyoCzWY_d21o9S67H-Ew5-0-8rKtz7vUyZfsIVzNVIgMJNEsSC4Plz-MMpKf9dQVM/exec"; // ใส่ Web App URL ของ Google Apps Script
+        <div id="regStatus" class="status-box" style="color: #666;"></div>
+        <button id="btnRegister" class="btn" onclick="submitRegistration()">ลงทะเบียน</button>
+    </div>
 
-        let userId = '';
-        let displayName = '';
+    <!-- 2. ส่วนลงเวลาเข้า-ออกงาน -->
+    <div id="clockSection">
+        <div id="userName" class="user-name">กำลังโหลดข้อมูล...</div>
+        <div id="userPos" class="user-pos"></div>
+        <div id="currentTime" class="clock-display">--/--/---- --:--:--</div>
 
-        document.getElementById('hiddenForm').action = GOOGLE_SCRIPT_URL;
+        <div id="lastInCard" class="info-card">
+            เวลาเข้างานของคุณคือ <br><strong id="lastInTimeDisplay" style="font-size: 1.1rem;">-</strong>
+        </div>
 
-        // เริ่มต้นการทำงาน LIFF
-        async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    userId = profile.userId;
-                    displayName = profile.displayName;
+        <div id="status" class="status-box" style="color: #666;">กำลังตรวจสอบสิทธิ์และพิกัด GPS...</div>
+        <button id="mainButton" class="btn" onclick="sendClockData()" disabled>กรุณารอสักครู่...</button>
+    </div>
+</div>
 
-                    if (profile.pictureUrl) {
-                        const img = document.getElementById('pictureUrl');
-                        img.src = profile.pictureUrl;
-                        img.classList.remove('hidden');
-                    }
-                    document.getElementById('displayName').innerText = displayName;
+<!-- Hidden Form สำหรับส่งข้อมูล -->
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+<form id="hiddenForm" action="" method="POST" target="hidden_iframe" style="display:none;">
+    <input type="hidden" name="action" id="f_action">
+    <input type="hidden" name="type" id="f_type">
+    <input type="hidden" name="userId" id="f_userId">
+    <input type="hidden" name="userName" id="f_userName">
+    <input type="hidden" name="firstName" id="f_firstName">
+    <input type="hidden" name="lastName" id="f_lastName">
+    <input type="hidden" name="position" id="f_position">
+    <input type="hidden" name="lat" id="f_lat">
+    <input type="hidden" name="lng" id="f_lng">
+    <input type="hidden" name="distance" id="f_distance">
+</form>
 
-                    // ตรวจสอบสถานะการลงทะเบียนผ่าน JSONP
-                    fetchUserDataJSONP(userId);
-                }
-            } catch (err) {
-                console.error('LIFF Initialization failed', err);
-                document.getElementById('loading').innerText = 'ไม่สามารถเชื่อมต่อ LINE ได้ กรุณาลองใหม่อีกครั้ง';
-            }
+<script>
+    const MY_LIFF_ID = "2010980900-k8VaJicy"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3sJqDxrA9FTb1mLTcRUDH7AJKUTyK_DuISPaAsdreGKNu0CyORchPGWdjA-YL-bxt/exec"; 
+    
+    // พิกัดโรงพยาบาลภูเพียง
+    const OFFICE_LAT = 18.805307941436052; 
+    const OFFICE_LNG = 100.77266354222921; 
+    const MAX_ALLOWED_DISTANCE = 150; 
+
+    let userId = ""; 
+    let userName = ""; 
+    let currentMode = "in"; 
+    let savedPosition = null;
+    let currentDistance = 0;
+
+    // ผูก URL กับ hiddenForm อัตโนมัติเมื่อโหลดหน้าเว็บ
+    document.addEventListener("DOMContentLoaded", function() {
+        const hiddenForm = document.getElementById("hiddenForm");
+        if (hiddenForm) {
+            hiddenForm.action = GOOGLE_SCRIPT_URL;
         }
+    });
 
-        // ดึงข้อมูลผู้ใช้จาก Google Sheet
-        function fetchUserDataJSONP(uid) {
-            window.handleUserDataResponse = function(data) {
-                document.getElementById('loading').classList.add('hidden');
+    function updateClock() {
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear() + 543;
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('currentTime').innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    async function main() {
+        try {
+            await liff.init({ liffId: MY_LIFF_ID });
+            if (!liff.isLoggedIn()) { 
+                liff.login(); 
+            } else {
+                const profile = await liff.getProfile();
+                userId = profile.userId; 
+                userName = profile.displayName;
+                document.getElementById('headerSub').innerText = userName;
+                if(profile.pictureUrl) {
+                    document.getElementById('userAvatar').src = profile.pictureUrl;
+                }
+                fetchUserDataJSONP(userId);
+            }
+        } catch (error) { 
+            console.error("LIFF Init Error:", error);
+            alert("ไม่สามารถเชื่อมต่อระบบ LINE ได้");
+        }
+    }
+    main();
+
+    function fetchUserDataJSONP(uid) {
+        window.handleUserData = function(data) {
+            if (data && data.registered) {
+                document.getElementById('registerSection').style.display = "none";
+                document.getElementById('clockSection').style.display = "block";
                 
-                if (data && data.registered) {
-                    // ผู้ใช้ลงทะเบียนแล้ว
-                    document.getElementById('empFullName').innerText = `${data.firstName} ${data.lastName}`;
-                    document.getElementById('empPosition').innerText = data.position || '-';
-                    
-                    if (data.lastClockInTime) {
-                        document.getElementById('lastTimeBox').innerText = `เวลาเข้างานล่าสุด: ${data.lastClockInTime}`;
-                    }
+                const fullName = `${data.firstName} ${data.lastName}`.trim();
+                document.getElementById('userName').innerText = fullName || "ไม่ระบุชื่อ";
+                document.getElementById('userPos').innerText = data.position ? `ตำแหน่ง: ${data.position}` : "ตำแหน่ง: -";
 
-                    document.getElementById('registrationForm').classList.add('hidden');
-                    document.getElementById('clockSection').classList.remove('hidden');
+                if (data.lastStatus === "in") {
+                    currentMode = "out"; 
+                    document.getElementById('lastInCard').style.display = "block";
+                    document.getElementById('lastInTimeDisplay').innerText = data.lastClockInTime;
                 } else {
-                    // ยังไม่ได้ลงทะเบียน
-                    document.getElementById('registrationForm').classList.remove('hidden');
-                    document.getElementById('clockSection').classList.add('hidden');
+                    currentMode = "in"; 
+                    document.getElementById('lastInCard').style.display = "none";
                 }
-            };
+                checkLocationPermission();
+            } else {
+                document.getElementById('registerSection').style.display = "block";
+                document.getElementById('clockSection').style.display = "none";
+            }
+        };
 
-            const script = document.createElement('script');
-            script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserDataResponse&t=${new Date().getTime()}`;
-            document.body.appendChild(script);
+        const script = document.createElement('script');
+        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserData&t=${new Date().getTime()}`;
+        document.body.appendChild(script);
+    }
+
+    // ยืนยันการลงทะเบียนผ่าน Form
+    function submitRegistration() {
+        const firstName = document.getElementById('regFirstName').value.trim();
+        const lastName = document.getElementById('regLastName').value.trim();
+        const position = document.getElementById('regPosition').value.trim();
+        const statusBox = document.getElementById('regStatus');
+        const btn = document.getElementById('btnRegister');
+
+        if (!firstName || !lastName) {
+            statusBox.style.color = "#cc0000";
+            statusBox.innerText = "กรุณากรอกชื่อและนามสกุลให้ครบถ้วน";
+            return;
         }
 
-        // กดปุ่มลงทะเบียน
-        function submitRegistration() {
-            const firstName = document.getElementById('regFirstName').value.trim();
-            const lastName = document.getElementById('regLastName').value.trim();
-            const position = document.getElementById('regPosition').value.trim();
-            const statusBox = document.getElementById('regStatus');
-            const btn = document.getElementById('btnRegister');
+        btn.disabled = true;
+        statusBox.style.color = "#007bff";
+        statusBox.innerText = "กำลังบันทึกข้อมูล...";
 
-            if (!firstName || !lastName) {
+        document.getElementById('f_action').value = "register";
+        document.getElementById('f_userId').value = userId;
+        document.getElementById('f_firstName').value = firstName;
+        document.getElementById('f_lastName').value = lastName;
+        document.getElementById('f_position').value = position;
+
+        document.getElementById('hiddenForm').submit();
+
+        // หน่วงเวลา แล้วตรวจสอบผลพร้อม Retry
+        setTimeout(() => {
+            fetchUserDataJSONPCheck(userId, 1);
+        }, 3500);
+    }
+
+    // ตรวจสอบผลหลังลงทะเบียน (พร้อม Retry 3 ครั้ง)
+    function fetchUserDataJSONPCheck(uid, retryCount = 1) {
+        const btn = document.getElementById('btnRegister');
+        const statusBox = document.getElementById('regStatus');
+
+        window.handleUserDataCheck = function(data) {
+            if (data && data.registered) {
+                statusBox.style.color = "#06C755";
+                statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
+                setTimeout(() => {
+                    fetchUserDataJSONP(uid);
+                }, 1000);
+            } else if (retryCount < 3) {
+                statusBox.innerText = `กำลังตรวจสอบข้อมูล... (${retryCount}/3)`;
+                setTimeout(() => {
+                    fetchUserDataJSONPCheck(uid, retryCount + 1);
+                }, 2500);
+            } else {
                 statusBox.style.color = "#cc0000";
-                statusBox.innerText = "กรุณากรอกชื่อและนามสกุลให้ครบถ้วน";
-                return;
+                statusBox.innerText = "ลงทะเบียนไม่ถูกต้อง ติดต่อเจ้าหน้าที่ดูแล (ไม่พบชื่อ-นามสกุลในระบบ)";
+                btn.disabled = false;
             }
+        };
 
+        const script = document.createElement('script');
+        script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserDataCheck&t=${new Date().getTime()}`;
+        document.body.appendChild(script);
+    }
+
+    function checkLocationPermission() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(validateDistance, (err) => {
+                document.getElementById('status').style.color = "#cc0000";
+                document.getElementById('status').innerText = "กรุณาเปิด GPS และอนุญาตสิทธิ์ตำแหน่ง";
+                document.getElementById('mainButton').innerText = "❌ ไม่พบพิกัด GPS";
+                document.getElementById('mainButton').disabled = true;
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        } else {
+            document.getElementById('status').innerText = "อุปกรณ์ไม่รองรับ GPS";
+            document.getElementById('mainButton').disabled = true;
+        }
+    }
+
+    function validateDistance(position) {
+        savedPosition = position;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        const R = 6371000;
+        const dLat = (lat - OFFICE_LAT) * Math.PI / 180;
+        const dLng = (lng - OFFICE_LNG) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(OFFICE_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        currentDistance = R * c;
+
+        const btn = document.getElementById('mainButton');
+        
+        if (currentDistance <= MAX_ALLOWED_DISTANCE) {
+            btn.disabled = false;
+            
+            if (currentMode === "in") {
+                document.getElementById('status').style.color = "#06C755";
+                document.getElementById('status').innerText = `อยู่ในระยะทำงาน (${currentDistance.toFixed(1)} ม.)`;
+                btn.innerText = "ลงเวลาเข้าทำงาน"; 
+                btn.className = "btn btn-in";
+            } else {
+                document.getElementById('status').innerText = "";
+                btn.innerText = "ลงเวลากลับ"; 
+                btn.className = "btn btn-out";
+            }
+        } else {
             btn.disabled = true;
-            statusBox.style.color = "#007bff";
-            statusBox.innerText = "กำลังบันทึกข้อมูลการลงทะเบียน...";
-
-            document.getElementById('f_action').value = "register";
-            document.getElementById('f_userId').value = userId;
-            document.getElementById('f_firstName').value = firstName;
-            document.getElementById('f_lastName').value = lastName;
-            document.getElementById('f_position').value = position;
-
-            document.getElementById('hiddenForm').submit();
-
-            // หน่วงเวลา แล้วตรวจสอบผลพร้อม Retry
-            setTimeout(() => {
-                fetchUserDataJSONPCheck(userId, 1);
-            }, 3500);
+            document.getElementById('status').style.color = "#cc0000";
+            document.getElementById('status').innerText = `อยู่นอกพื้นที่! ห่าง ${currentDistance.toFixed(1)} เมตร`;
+            btn.innerText = "❌ อยู่นอกระยะทำงาน";
+            btn.className = "btn";
         }
+    }
 
-        // ตรวจสอบผลหลังลงทะเบียน (พร้อมระบบ Retry หน่วงเวลารอ Apps Script ทำงานเสร็จ)
-        function fetchUserDataJSONPCheck(uid, retryCount = 1) {
-            const btn = document.getElementById('btnRegister');
-            const statusBox = document.getElementById('regStatus');
+    function sendClockData() {
+        if (!savedPosition) return;
 
-            window.handleUserDataCheck = function(data) {
-                if (data && data.registered) {
-                    statusBox.style.color = "#06C755";
-                    statusBox.innerText = "✅ ลงทะเบียนสำเร็จ!";
-                    setTimeout(() => {
-                        fetchUserDataJSONP(uid);
-                    }, 1000);
-                } else if (retryCount < 3) {
-                    statusBox.innerText = `กำลังตรวจสอบข้อมูล... (${retryCount}/3)`;
-                    setTimeout(() => {
-                        fetchUserDataJSONPCheck(uid, retryCount + 1);
-                    }, 2500);
-                } else {
-                    statusBox.style.color = "#cc0000";
-                    statusBox.innerText = "ลงทะเบียนไม่ถูกต้อง ติดต่อเจ้าหน้าที่ดูแล (ไม่พบชื่อ-นามสกุลในระบบ)";
-                    btn.disabled = false;
-                }
-            };
+        const btn = document.getElementById('mainButton');
+        btn.disabled = true;
+        document.getElementById('status').style.color = "#11999e";
+        document.getElementById('status').innerText = "กำลังบันทึกข้อมูล...";
 
-            const script = document.createElement('script');
-            script.src = `${GOOGLE_SCRIPT_URL}?userId=${uid}&callback=handleUserDataCheck&t=${new Date().getTime()}`;
-            document.body.appendChild(script);
-        }
+        document.getElementById('f_action').value = "clock";
+        document.getElementById('f_type').value = currentMode;
+        document.getElementById('f_userId').value = userId;
+        document.getElementById('f_userName').value = userName;
+        document.getElementById('f_lat').value = savedPosition.coords.latitude;
+        document.getElementById('f_lng').value = savedPosition.coords.longitude;
+        document.getElementById('f_distance').value = currentDistance;
 
-        // กดปุ่ม เข้างาน / ออกงาน
-        function handleClock(type) {
-            const statusBox = document.getElementById('clockStatus');
-            const btnIn = document.getElementById('btnClockIn');
-            const btnOut = document.getElementById('btnClockOut');
+        document.getElementById('hiddenForm').submit();
 
-            btnIn.disabled = true;
-            btnOut.disabled = true;
-            statusBox.style.color = "#007bff";
-            statusBox.innerText = "กำลังดึงพิกัดตำแหน่ง...";
-
-            if (!navigator.geolocation) {
-                statusBox.style.color = "#cc0000";
-                statusBox.innerText = "อุปกรณ์ของคุณไม่รองรับการดึงพิกัด GPS";
-                btnIn.disabled = false;
-                btnOut.disabled = false;
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-
-                    statusBox.innerText = "กำลังบันทึกเวลา...";
-
-                    document.getElementById('f_action').value = "clock";
-                    document.getElementById('f_userId').value = userId;
-                    document.getElementById('f_userName').value = displayName;
-                    document.getElementById('f_type').value = type;
-                    document.getElementById('f_lat').value = lat;
-                    document.getElementById('f_lng').value = lng;
-                    document.getElementById('f_distance').value = "0"; // ปรับคำนวณระยะห่างเพิ่มเติมได้ที่นี่
-
-                    document.getElementById('hiddenForm').submit();
-
-                    setTimeout(() => {
-                        statusBox.style.color = "#06C755";
-                        statusBox.innerText = (type === 'in') ? "✅ บันทึกเวลาเข้างานเรียบร้อยแล้ว" : "✅ บันทึกเวลาออกงานเรียบร้อยแล้ว";
-                        setTimeout(() => {
-                            liff.closeWindow(); // ปิดหน้าต่าง LIFF หลังลงเวลาเสร็จ
-                        }, 2000);
-                    }, 2000);
-                },
-                (error) => {
-                    statusBox.style.color = "#cc0000";
-                    statusBox.innerText = "กรุณาเปิด GPS และอนุญาตให้เข้าถึงตำแหน่ง";
-                    btnIn.disabled = false;
-                    btnOut.disabled = false;
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        }
-
-        main();
-    </script>
+        setTimeout(() => {
+            fetchUserDataJSONP(userId);
+        }, 1800);
+    }
+</script>
 </body>
 </html>
